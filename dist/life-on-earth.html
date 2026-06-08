@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life on Earth — A Journey Through Deep Time</title>
+  <meta name="description" content="A live, cinematic scroll through 4.6 billion years: from the birth of the solar system to the rise of dinosaurs, the great extinctions, and us." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+/* =========================================================================
+   Life on Earth — a cinematic scroll through deep time
+   ========================================================================= */
+
+:root {
+  --bg: #05060c;
+  --ink: #f4f1ea;
+  --ink-dim: #b9b4ad;
+  --accent: #ff8a3d;
+  --serif: "Cinzel", Georgia, serif;
+  --sans: "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The animated universe, pinned behind everything ------------------------- */
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  display: block;
+}
+
+/* ====================== HUD: the deep-time clock ========================== */
+.hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.6rem;
+  background: linear-gradient(180deg, rgba(5,6,12,0.85) 0%, rgba(5,6,12,0) 100%);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity .6s ease, transform .6s ease;
+  pointer-events: none;
+}
+.hud--visible { opacity: 1; transform: translateY(0); }
+
+.hud__brand {
+  display: flex; align-items: center; gap: .55rem;
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .28em;
+  color: var(--ink-dim);
+}
+.hud__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent, #ff8a3d);
+  box-shadow: 0 0 12px var(--accent, #ff8a3d);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+.hud__clock { text-align: center; flex: 1; }
+.hud__age {
+  font-family: var(--mono);
+  font-size: clamp(1rem, 2.6vw, 1.55rem);
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: #fff;
+  text-shadow: 0 0 24px rgba(255,180,90,0.25);
+}
+.hud__age em { font-style: normal; font-weight: 400; font-size: .62em; color: var(--ink-dim); letter-spacing: .12em; }
+.hud__era {
+  font-family: var(--serif);
+  font-size: .82rem;
+  letter-spacing: .12em;
+  color: var(--ink-dim);
+  margin-top: .15rem;
+}
+
+.hud__progress { display: flex; align-items: center; gap: .6rem; min-width: 120px; justify-content: flex-end; }
+.hud__bar { width: 90px; height: 3px; background: rgba(255,255,255,0.14); border-radius: 2px; overflow: hidden; }
+.hud__bar span { display: block; height: 100%; width: 0%; background: var(--accent, #ff8a3d); box-shadow: 0 0 8px var(--accent); transition: width .15s linear; }
+.hud__pct { font-family: var(--mono); font-size: .72rem; color: var(--ink-dim); min-width: 34px; text-align: right; }
+
+/* ====================== Vertical era rail ================================= */
+.rail {
+  position: fixed;
+  right: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  max-height: 78vh;
+}
+.rail__item {
+  display: flex; align-items: center; gap: .5rem;
+  background: none; border: none; cursor: pointer;
+  color: var(--ink-dim);
+  padding: .12rem 0;
+  justify-content: flex-end;
+  font-family: var(--mono);
+  opacity: .55;
+  transition: opacity .25s ease;
+}
+.rail__item:hover { opacity: 1; }
+.rail__tick {
+  width: 18px; height: 2px; border-radius: 2px;
+  background: currentColor;
+  transition: width .25s ease, background .25s ease;
+}
+.rail__label {
+  font-size: .62rem; letter-spacing: .08em;
+  white-space: nowrap;
+  max-width: 0; overflow: hidden;
+  opacity: 0;
+  transition: max-width .3s ease, opacity .3s ease;
+}
+.rail__item:hover .rail__label { max-width: 160px; opacity: 1; }
+.rail__item--active { opacity: 1; color: #fff; }
+.rail__item--active .rail__tick { width: 30px; background: var(--accent, #ff8a3d); box-shadow: 0 0 10px var(--accent, #ff8a3d); }
+.rail__item--active .rail__label { max-width: 160px; opacity: 1; color: #fff; }
+
+/* ====================== Hero ============================================== */
+.hero {
+  position: relative; z-index: 10;
+  height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+.hero__inner { max-width: 760px; }
+.hero__kicker {
+  font-family: var(--mono);
+  font-size: .8rem; letter-spacing: .42em;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  animation: fadeUp 1s .2s both;
+}
+.hero__title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(3rem, 11vw, 7.5rem);
+  line-height: 1;
+  letter-spacing: .02em;
+  background: linear-gradient(180deg, #fff 0%, #ffd9a0 60%, #ff8a3d 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 60px rgba(255,140,60,0.25);
+  animation: fadeUp 1.1s .35s both;
+}
+.hero__sub {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: var(--ink-dim);
+  max-width: 600px; margin: 1.6rem auto 0;
+  animation: fadeUp 1.1s .55s both;
+}
+.hero__scroll {
+  margin-top: 3.5rem;
+  display: inline-flex; flex-direction: column; align-items: center; gap: .8rem;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .3em;
+  color: var(--ink-dim);
+  animation: fadeUp 1.1s .8s both;
+}
+.hero__arrow {
+  width: 1px; height: 46px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+  position: relative;
+  animation: scrollHint 2s ease-in-out infinite;
+}
+.hero__arrow::after {
+  content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%) rotate(45deg);
+  width: 7px; height: 7px; border-right: 1px solid var(--accent); border-bottom: 1px solid var(--accent);
+}
+@keyframes scrollHint { 0%,100%{opacity:.3; transform:translateY(0)} 50%{opacity:1; transform:translateY(6px)} }
+@keyframes fadeUp { from{opacity:0; transform:translateY(24px)} to{opacity:1; transform:translateY(0)} }
+
+/* ====================== Story panels ===================================== */
+#story { position: relative; z-index: 10; }
+
+.panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 6rem clamp(1.5rem, 8vw, 9rem);
+}
+/* alternate sides so the eye travels and the art stays visible */
+.panel:nth-child(even) { justify-content: flex-end; }
+.panel:nth-child(odd) { justify-content: flex-start; }
+
+.panel__card {
+  max-width: 540px;
+  background: rgba(10, 12, 22, 0.55);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid var(--accent);
+  border-radius: 14px;
+  padding: 2.2rem 2.4rem;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+
+.panel__tag {
+  font-family: var(--mono);
+  font-size: .72rem; letter-spacing: .26em;
+  color: var(--accent);
+  margin-bottom: .9rem;
+}
+.panel__title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(1.8rem, 4vw, 2.9rem);
+  line-height: 1.08;
+  margin-bottom: 1.1rem;
+  color: #fff;
+}
+.panel__lead {
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  color: #e8e4dc;
+  margin-bottom: 1.4rem;
+}
+.panel__facts { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+.panel__facts li {
+  position: relative;
+  padding-left: 1.4rem;
+  font-size: .95rem;
+  color: var(--ink-dim);
+}
+.panel__facts li::before {
+  content: "";
+  position: absolute; left: 0; top: .55em;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Extinction chapters get a heavier, alarming treatment ------------------- */
+.panel__card--extinction {
+  border-left-color: #ff2d2d;
+  border-top: 1px solid rgba(255,60,60,0.25);
+  box-shadow: 0 30px 90px rgba(120,0,0,0.4), inset 0 0 60px rgba(120,0,0,0.15);
+}
+.panel__card--extinction .panel__tag,
+.panel__card--extinction .panel__facts li::before { color: #ff5a4a; background: #ff3b30; }
+.panel__card--extinction .panel__facts li::before { box-shadow: 0 0 8px #ff3b30; }
+.panel__extinction {
+  display: flex; flex-direction: column; gap: .5rem;
+  margin: 0 0 1.3rem;
+  padding: 1rem 1.1rem;
+  background: rgba(60,0,0,0.28);
+  border: 1px solid rgba(255,60,60,0.22);
+  border-radius: 10px;
+}
+.ext__row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.ext__label { font-family: var(--mono); font-size: .64rem; letter-spacing: .2em; color: #ff7a6a; }
+.ext__val { font-size: .92rem; color: #ffd9d3; text-align: right; font-weight: 600; }
+
+/* ====================== Finale =========================================== */
+.finale {
+  position: relative; z-index: 10;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 3rem;
+}
+.finale__inner { max-width: 640px; }
+.finale__inner h2 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(3rem, 9vw, 6rem);
+  background: linear-gradient(180deg, #fff, #ffd27a);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 1.4rem;
+}
+.finale__inner p { font-size: clamp(1rem, 2vw, 1.25rem); color: #e8e4dc; margin-bottom: 1.2rem; }
+.finale__inner p strong { color: #ffd27a; }
+.finale__small { color: var(--ink-dim) !important; font-size: 1rem !important; font-style: italic; }
+.finale__btn {
+  margin-top: 1.8rem;
+  font-family: var(--mono); font-size: .74rem; letter-spacing: .18em;
+  color: #ffd27a; background: rgba(255,210,122,0.08);
+  border: 1px solid rgba(255,210,122,0.35); border-radius: 40px;
+  padding: .8rem 1.6rem; cursor: pointer;
+  transition: background .25s ease, transform .2s ease;
+}
+.finale__btn:hover { background: rgba(255,210,122,0.18); transform: translateY(-2px); }
+
+/* ====================== Responsive ======================================= */
+@media (max-width: 720px) {
+  .rail { display: none; }
+  .hud { padding: .7rem 1rem; gap: .6rem; }
+  .hud__brand span:last-child { display: none; }
+  .hud__progress { min-width: auto; }
+  .hud__bar { width: 50px; }
+  .panel { padding: 5rem 1.2rem; justify-content: center !important; }
+  .panel__card { padding: 1.6rem 1.4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hud__dot, .hero__arrow { animation: none; }
+}
+
+  </style>
+</head>
+<body>
+  <!-- The animated universe lives here, behind everything -->
+  <canvas id="stage" aria-hidden="true"></canvas>
+
+  <!-- Persistent HUD: the deep-time clock -->
+  <header class="hud" id="hud">
+    <div class="hud__brand">
+      <span class="hud__dot"></span>
+      <span>LIFE ON EARTH</span>
+    </div>
+    <div class="hud__clock">
+      <div class="hud__age" id="clockAge">4,600 <em>million years ago</em></div>
+      <div class="hud__era" id="clockEra">The Solar System Ignites</div>
+    </div>
+    <div class="hud__progress">
+      <div class="hud__bar"><span id="progressFill"></span></div>
+      <div class="hud__pct" id="progressPct">0%</div>
+    </div>
+  </header>
+
+  <!-- Vertical era rail -->
+  <nav class="rail" id="rail" aria-label="Eras"></nav>
+
+  <!-- Intro -->
+  <section class="hero" id="hero" data-scene="genesis">
+    <div class="hero__inner">
+      <p class="hero__kicker">A SCROLL THROUGH DEEP TIME</p>
+      <h1 class="hero__title">Life on Earth</h1>
+      <p class="hero__sub">4.6 billion years compressed into a single descent. From a cloud of dust to the dinosaurs, the great dyings, and the strange apes who learned to look back.</p>
+      <div class="hero__scroll">
+        <span>BEGIN THE DESCENT</span>
+        <div class="hero__arrow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Story panels are injected by app.js -->
+  <main id="story"></main>
+
+  <!-- Outro -->
+  <section class="finale" id="finale">
+    <div class="finale__inner">
+      <h2>Now.</h2>
+      <p>If all 4.6 billion years were a single day, complex animals appear after 9 p.m., the dinosaurs reign through the late evening, and all of recorded human history is the last <strong>0.0&hairsp;3&nbsp;seconds</strong> before midnight.</p>
+      <p class="finale__small">You have just fallen through deep time. The planet keeps going — with or without us.</p>
+      <button class="finale__btn" id="restartBtn">↑ Return to the beginning</button>
+    </div>
+  </section>
+  <script>
+/*
+ * timeline-data.js
+ * The script of deep time. Each "chapter" is a full-screen scene with:
+ *   - id:     key used to drive the matching canvas scene in scenes.js
+ *   - rail:   short label for the side navigation
+ *   - age:    millions of years ago (used by the deep-time clock)
+ *   - era:    geological era/eon shown in the HUD
+ *   - tag:    small kicker above the title
+ *   - title:  the headline
+ *   - lead:   one cinematic paragraph
+ *   - facts:  bullet beats (kept punchy)
+ *   - extinction: optional dramatic block for mass-extinction chapters
+ *   - accent: hex driving the scene's colour grade
+ *
+ * Ages are in millions of years ago (Ma). "0" is today.
+ */
+window.TIMELINE = [
+  {
+    id: "genesis",
+    rail: "Genesis",
+    age: 4600,
+    era: "Hadean Eon",
+    accent: "#ff8a3d",
+    tag: "4.6 BILLION YEARS AGO",
+    title: "A Cloud Collapses",
+    lead: "There is no Earth yet — only a vast, slowly turning cloud of gas and dust, the wreckage of dead stars. A nearby shockwave nudges it, and gravity takes over. The cloud falls inward, spins into a disk, and at its blazing centre a new star ignites: the Sun.",
+    facts: [
+      "98% of the cloud's mass falls into the Sun.",
+      "The leftover disk of debris begins to clump.",
+      "Grains stick to grains; pebbles to boulders to mountains.",
+    ],
+  },
+  {
+    id: "accretion",
+    rail: "Earth Forms",
+    age: 4540,
+    era: "Hadean Eon",
+    accent: "#ff5a2c",
+    tag: "4.54 BILLION YEARS AGO",
+    title: "The World Assembles",
+    lead: "In the disk's inner lanes, rocky worldlets collide and merge in a few violent million years. One of them wins — sweeping up its neighbours, growing hot and molten, glowing like an ember. This is the infant Earth: an ocean of magma under a sky raining fire.",
+    facts: [
+      "Earth grows mostly complete within ~10–20 million years.",
+      "Heavy iron sinks to form the core; rock floats up as mantle.",
+      "The surface is a hellscape of lava — the Hadean, named for Hades.",
+    ],
+  },
+  {
+    id: "theia",
+    rail: "The Moon",
+    age: 4510,
+    era: "Hadean Eon",
+    accent: "#ffd36b",
+    tag: "4.51 BILLION YEARS AGO",
+    title: "The Night the Moon Was Born",
+    lead: "A Mars-sized world named Theia is on a collision course. It strikes Earth a glancing, catastrophic blow. The impact vaporises rock, throws a ring of molten debris into orbit, and tilts our planet on its axis. From that glowing ring, in perhaps less than a century, the Moon condenses.",
+    facts: [
+      "The collision gave Earth its 23.5° tilt — the reason we have seasons.",
+      "The young Moon orbited far closer; nights were brighter, tides immense.",
+      "Earth's day was only ~5–6 hours long.",
+    ],
+  },
+  {
+    id: "oceans",
+    rail: "Oceans",
+    age: 4400,
+    era: "Hadean Eon",
+    accent: "#3da3ff",
+    tag: "4.4 BILLION YEARS AGO",
+    title: "The Rains That Never Stopped",
+    lead: "As the surface cools, steam in the thick atmosphere finally condenses. Rain falls — and falls — for thousands of years, filling the basins of a cooling crust. Comets and asteroids add their ice. For the first time, Earth is a blue world, wrapped in a global ocean beneath a sky still choked with carbon dioxide.",
+    facts: [
+      "The oldest known mineral grains (zircons) date from this time.",
+      "Liquid water — the one ingredient life can't do without — has arrived.",
+      "The stage is set in the dark, warm chemistry of the deep sea.",
+    ],
+  },
+  {
+    id: "firstlife",
+    rail: "First Life",
+    age: 3800,
+    era: "Archean Eon",
+    accent: "#36e0a0",
+    tag: "3.8 BILLION YEARS AGO",
+    title: "A Spark in the Dark",
+    lead: "Somewhere — perhaps in the mineral chimneys of a deep-sea vent — chemistry crosses a threshold and becomes biology. A molecule learns to copy itself. Wrapped in a fatty membrane, it becomes the first cell: a single, microscopic ancestor from which every living thing descends.",
+    facts: [
+      "All life on Earth — you, oak trees, whales, bacteria — shares this origin.",
+      "These first microbes are prokaryotes: tiny cells with no nucleus.",
+      "For the next two billion years, life stays single-celled and invisible.",
+    ],
+  },
+  {
+    id: "stromatolites",
+    rail: "Cyanobacteria",
+    age: 3500,
+    era: "Archean Eon",
+    accent: "#7ad65f",
+    tag: "3.5 BILLION YEARS AGO",
+    title: "The Builders of Reefs",
+    lead: "In shallow, sunlit seas, mats of cyanobacteria layer themselves into dome-shaped mounds called stromatolites — the oldest fossils we can see with the naked eye. And these microbes have a superpower: photosynthesis. They drink sunlight and exhale a strange, corrosive gas almost nothing can yet survive — oxygen.",
+    facts: [
+      "Stromatolites still grow today in places like Shark Bay, Australia.",
+      "Cyanobacteria are slowly poisoning their own atmosphere.",
+      "Oxygen will become the engine of all complex life.",
+    ],
+  },
+  {
+    id: "oxygen",
+    rail: "Great Oxidation",
+    age: 2400,
+    era: "Proterozoic Eon",
+    accent: "#9be8ff",
+    tag: "2.4 BILLION YEARS AGO",
+    title: "The Great Oxidation",
+    lead: "For ages the oxygen was soaked up by iron in the oceans, rusting the seafloor red. But the sinks fill, and free oxygen floods the air for the first time. To most life, it is lethal — this may be the largest extinction Earth ever saw. But for those that adapt, oxygen unlocks a furnace of energy.",
+    facts: [
+      "Banded iron formations — Earth rusting — date from this turning point.",
+      "Free oxygen triggered one of Earth's first global glaciations.",
+      "Often called the 'Oxygen Catastrophe' — death for some, fuel for the future.",
+    ],
+  },
+  {
+    id: "eukaryotes",
+    rail: "Complex Cells",
+    age: 1800,
+    era: "Proterozoic Eon",
+    accent: "#b58bff",
+    tag: "1.8 BILLION YEARS AGO",
+    title: "A Cell Swallows a Cell",
+    lead: "One fateful day, a larger cell engulfs a smaller oxygen-breathing one — but instead of digesting it, keeps it alive inside. That captive becomes the mitochondrion, the power plant of complex life. This merger creates the eukaryote: a cell with a nucleus and the energy budget to one day build a body.",
+    facts: [
+      "Every plant and animal cell still carries those ancient bacterial engines.",
+      "Mitochondria keep their own separate DNA to this day.",
+      "Sex — the shuffling of genes — likely evolves around now.",
+    ],
+  },
+  {
+    id: "snowball",
+    rail: "Snowball Earth",
+    age: 700,
+    era: "Cryogenian Period",
+    accent: "#cfe9ff",
+    tag: "720–635 MILLION YEARS AGO",
+    title: "The Frozen Planet",
+    lead: "The climate tips into runaway cooling. Ice sheets march from the poles to the equator until the entire planet may freeze over — a white world gleaming in space, oceans locked beneath kilometres of ice. Life clings on in slush and around volcanic vents. When CO₂ from volcanoes finally thaws the planet, life explodes in complexity.",
+    facts: [
+      "Glaciers reached tropical latitudes — 'Snowball Earth.'",
+      "Volcanic CO₂ slowly built up until the ice shattered in a greenhouse rebound.",
+      "The thaw is followed by the first large, soft-bodied animals.",
+    ],
+  },
+  {
+    id: "ediacara",
+    rail: "First Animals",
+    age: 575,
+    era: "Ediacaran Period",
+    accent: "#ff9ecb",
+    tag: "575 MILLION YEARS AGO",
+    title: "The Garden of Ediacara",
+    lead: "On the calm seafloor, the first large animals appear — strange, quilted, fern-like and frond-like beings, soft as jelly, anchored to the mud. They have no mouths, no eyes, no guts. They simply absorb. It is a peaceful world with no predators and no teeth — the quiet before the storm.",
+    facts: [
+      "These Ediacaran organisms are unlike any animal alive today.",
+      "No skeletons, no hunting — a still, gentle ecosystem.",
+      "It is the last age of innocence in the history of animals.",
+    ],
+  },
+  {
+    id: "cambrian",
+    rail: "Cambrian Burst",
+    age: 541,
+    era: "Cambrian Period",
+    accent: "#ff6f91",
+    tag: "541 MILLION YEARS AGO",
+    title: "The Cambrian Explosion",
+    lead: "In a geological heartbeat, life invents the body. Eyes open for the first time. Shells, claws, legs, spines, and jaws appear almost at once. Predators hunt; prey flees and armours up. Nearly every major animal group alive today bursts onto the scene in this evolutionary arms race. The oceans become a battlefield.",
+    facts: [
+      "Anomalocaris, a metre-long predator, rules the seas with grasping arms.",
+      "Trilobites scuttle the seafloor in thousands of forms.",
+      "The first true eyes ignite a revolution in hunting and hiding.",
+    ],
+  },
+  {
+    id: "fish",
+    rail: "Age of Fish",
+    age: 420,
+    era: "Silurian–Devonian",
+    accent: "#2fb6c9",
+    tag: "420 MILLION YEARS AGO",
+    title: "Backbones and Jaws",
+    lead: "Among the swimmers, a lineage with an internal spine rises to dominance — the fish. Jaws evolve, and with them, true predators of the deep. Armoured giants like Dunkleosteus, with self-sharpening bony blades for teeth, patrol the Devonian seas. Meanwhile, on barren shores, the first green plants and insects creep onto land.",
+    facts: [
+      "Dunkleosteus could bite with the force of a modern crocodile.",
+      "Plants green the continents; the first forests take root.",
+      "The land is still silent of animals — but not for long.",
+    ],
+  },
+  {
+    id: "land",
+    rail: "Life Leaves Sea",
+    age: 375,
+    era: "Late Devonian",
+    accent: "#6fae3a",
+    tag: "375 MILLION YEARS AGO",
+    title: "The First Step Ashore",
+    lead: "In weedy shallows, a lobe-finned fish props itself on stubby, bony fins to gulp air and haul across the mud. Over generations, fins become limbs, and gills give way to lungs. Creatures like Tiktaalik bridge the worlds of water and land. The first vertebrates — the tetrapods — drag themselves onto the shore. Everything with a backbone and four limbs descends from them.",
+    facts: [
+      "Tiktaalik had a neck, wrists, and lungs — a fish learning to walk.",
+      "Every amphibian, reptile, bird, and mammal traces back to this step.",
+      "Your own arm bones echo the fins of a Devonian fish.",
+    ],
+  },
+  {
+    id: "carbon",
+    rail: "Coal Forests",
+    age: 320,
+    era: "Carboniferous Period",
+    accent: "#3fae6b",
+    tag: "320 MILLION YEARS AGO",
+    title: "Giant Forests, Giant Bugs",
+    lead: "Towering forests of tree-sized ferns and clubmosses blanket the swampy continents, pumping oxygen until the air is richer than at any time before or since. In that oxygen-soaked world, arthropods grow monstrous: dragonflies with the wingspan of a hawk, millipedes longer than a person. Buried, these forests will one day become the coal that powers human civilisation.",
+    facts: [
+      "Atmospheric oxygen reached ~35% (it's 21% today).",
+      "Meganeura — a dragonfly with a 70 cm wingspan — ruled the air.",
+      "The first reptiles appear, laying the first amniotic eggs on land.",
+    ],
+  },
+  {
+    id: "reptiles",
+    rail: "Rise of Reptiles",
+    age: 300,
+    era: "Permian Period",
+    accent: "#d99a4e",
+    tag: "300 MILLION YEARS AGO",
+    title: "The Rise of the Reptiles",
+    lead: "A revolutionary invention sets vertebrates free from the water's edge: the amniotic egg — a self-contained pond in a shell that can be laid on dry land. No longer tethered to ponds to breed, reptiles spread across the drying interior of the supercontinent Pangaea. Among them rise the sail-backed synapsids like Dimetrodon — not dinosaurs, but our own distant forerunners, the ancestors of mammals.",
+    facts: [
+      "The amniotic egg freed vertebrates to colonise the dry continents.",
+      "Dimetrodon's sail may have warmed its blood in the morning sun.",
+      "Synapsids — the 'mammal line' — dominate this world, not dinosaurs.",
+      "All the land is fused into one giant continent: Pangaea.",
+    ],
+  },
+  {
+    id: "permian_ext",
+    rail: "The Great Dying",
+    age: 252,
+    era: "Permian–Triassic",
+    accent: "#ff3b30",
+    tag: "252 MILLION YEARS AGO",
+    title: "The Great Dying",
+    extinction: {
+      kills: "Up to 96% of marine species — 70% of land vertebrates",
+      cause: "Siberian Traps super-volcanism",
+    },
+    lead: "The worst catastrophe life has ever known. In Siberia, volcanoes erupt for hundreds of thousands of years, flooding an area the size of a continent with lava and belching carbon dioxide and methane. The planet bakes. Oceans turn acidic and starved of oxygen, the seas go silent, and forests die. Nearly all life is annihilated. Earth comes within a hair's breadth of sterility.",
+    facts: [
+      "Ocean temperatures may have hit a lethal 40°C.",
+      "It took 5–10 million years for ecosystems to recover.",
+      "This near-total reset cleared the stage for an entirely new dynasty.",
+    ],
+  },
+  {
+    id: "triassic",
+    rail: "First Dinosaurs",
+    age: 230,
+    era: "Triassic Period",
+    accent: "#caa15a",
+    tag: "230 MILLION YEARS AGO",
+    title: "Dawn of the Dinosaurs",
+    lead: "From the wreckage of the Great Dying, the survivors radiate into empty worlds. A nimble new group of reptiles — fast, upright, with legs tucked beneath their bodies rather than splayed to the sides — emerges in the Triassic. They are small at first, dog-sized hunters like Eoraptor. But this posture is a quiet revolution. These are the first dinosaurs, and the world is about to become theirs.",
+    facts: [
+      "Early dinosaurs were small, bipedal, and fleet-footed.",
+      "Legs under the body meant they could run, breathe, and chase efficiently.",
+      "Pangaea begins to crack apart, opening new lands to colonise.",
+    ],
+  },
+  {
+    id: "triassic_ext",
+    rail: "End-Triassic",
+    age: 201,
+    era: "Triassic–Jurassic",
+    accent: "#ff6b3d",
+    tag: "201 MILLION YEARS AGO",
+    title: "The Door Opens",
+    extinction: {
+      kills: "~Three-quarters of all species",
+      cause: "Volcanism as Pangaea rifted apart",
+    },
+    lead: "As the supercontinent tears in two, massive volcanic eruptions along the rift poison the climate again. Many of the dinosaurs' rivals — the big crocodile-like reptiles that had kept them in check — are wiped out. The catastrophe is a culling for most, but for the dinosaurs it is an open door. They walk through it into a world with no competitors left standing.",
+    facts: [
+      "The extinction removed the dinosaurs' main competitors.",
+      "Survivors inherit a planet of empty ecological thrones.",
+      "What follows is 135 million years of dinosaur supremacy.",
+    ],
+  },
+  {
+    id: "jurassic",
+    rail: "Age of Giants",
+    age: 160,
+    era: "Jurassic Period",
+    accent: "#5fae57",
+    tag: "160 MILLION YEARS AGO",
+    title: "The Age of Giants",
+    lead: "The Jurassic is the golden age of size. Long-necked sauropods like Brachiosaurus and Diplodocus grow into the largest animals ever to walk the Earth — living cranes of bone and muscle, browsing the tops of conifer forests like vast gentle machines. Stegosaurus plates its back in armour. Hunting them, fierce Allosaurus. And in the warm air above, a lineage of small feathered dinosaurs takes to the sky — the first birds.",
+    facts: [
+      "Some sauropods reached 30+ metres long and weighed 50+ tonnes.",
+      "Archaeopteryx — half dinosaur, half bird — glides through the Jurassic.",
+      "Yes: birds are living dinosaurs. The lineage never truly died.",
+    ],
+  },
+  {
+    id: "cretaceous",
+    rail: "Reign of the Tyrant",
+    age: 90,
+    era: "Cretaceous Period",
+    accent: "#8a9a3a",
+    tag: "90 MILLION YEARS AGO",
+    title: "The Reign of the Tyrant Kings",
+    lead: "The world blooms — literally. Flowering plants spread, and with them the insects, and the dinosaurs grow more varied than ever. Horned Triceratops herds graze the plains; armoured Ankylosaurus swing bone-clubbed tails; duck-billed herds migrate in their thousands. And stalking them all comes the apex of apex predators: Tyrannosaurus rex — thirteen metres of muscle, with a bite that could crush a car and shatter bone. For 165 million years, dinosaurs have ruled. It seems they always will.",
+    facts: [
+      "T. rex had the strongest bite of any land animal that ever lived.",
+      "Flowers and bees co-evolve, transforming the world's colour and scent.",
+      "Triceratops and T. rex were genuine contemporaries and rivals.",
+    ],
+  },
+  {
+    id: "kpg_ext",
+    rail: "The Asteroid",
+    age: 66,
+    era: "Cretaceous–Paleogene",
+    accent: "#ff2d2d",
+    tag: "66 MILLION YEARS AGO",
+    title: "The Day the Sky Fell",
+    extinction: {
+      kills: "~75% of species — all non-bird dinosaurs",
+      cause: "A 10-km asteroid impact at Chicxulub",
+    },
+    lead: "On an ordinary day, a mountain of rock ten kilometres wide slams into the shallow sea off what is now Mexico at 20 kilometres per second. The impact releases the energy of billions of atomic bombs. A wall of fire, a global earthquake, mega-tsunamis, and a rain of molten glass scorch the planet. Then comes the long dark: dust and soot blot out the Sun for years, photosynthesis fails, the food chain collapses. The great dynasty of dinosaurs — 165 million years of dominance — ends in a single geological instant. But not all of them. The small, the feathered, the burrowing few survive. The birds endure.",
+    facts: [
+      "The Chicxulub crater is 180 km wide and still buried under the Yucatán.",
+      "Within hours, the air itself glowed hot enough to ignite forests worldwide.",
+      "A years-long 'impact winter' starved the survivors of sunlight.",
+      "Birds are the dinosaurs that made it through the night.",
+    ],
+  },
+  {
+    id: "mammals",
+    rail: "Age of Mammals",
+    age: 50,
+    era: "Paleogene Period",
+    accent: "#c98a5e",
+    tag: "50 MILLION YEARS AGO",
+    title: "The Meek Inherit the Earth",
+    lead: "For 100 million years, mammals had survived in the shadows — small, nocturnal, scurrying underfoot of the dinosaurs. Now, with the giants gone, they pour into every empty niche. In just a few million years they grow large and diverse: ancestral horses, whales returning to the sea, primates climbing into the trees. The Age of Reptiles gives way to the Age of Mammals — and to warm blood, big brains, and the slow patient care of young.",
+    facts: [
+      "Whales evolved from small, deer-like mammals that walked on land.",
+      "Grasslands spread, and with them grazing herds and their hunters.",
+      "Primates take to the trees — a lineage that leads, eventually, to us.",
+    ],
+  },
+  {
+    id: "humans",
+    rail: "A Mind Awakes",
+    age: 0.3,
+    era: "Quaternary Period",
+    accent: "#ffd27a",
+    tag: "300,000 YEARS AGO",
+    title: "A Species That Looks Back",
+    lead: "On the African savanna, one lineage of ape stands upright, frees its hands, and grows an extraordinary brain. It makes fire, then tools, then language, then art. In the final sliver of Earth's story — a flicker so brief it would be invisible on any honest timeline — Homo sapiens spreads across the whole planet and does something no organism has ever done before: it looks back across four and a half billion years, and understands where it came from. That, right now, is you.",
+    facts: [
+      "All of recorded history fits in the last ~5,000 years — a rounding error.",
+      "We are the first species to learn the age of its own planet.",
+      "We are stardust, briefly arranged in a way that can wonder about itself.",
+    ],
+  },
+];
+
+/*
+ * scenes.js
+ * A tiny procedural-animation engine. Every chapter in timeline-data.js has a
+ * matching scene here, drawn on a single full-screen canvas. Scenes crossfade
+ * into one another as you scroll, so the whole planet's history feels like one
+ * continuous descent rather than a slideshow.
+ *
+ * Each scene is a function (ctx, env) where env carries:
+ *   t      seconds since load (for animation)
+ *   w, h   canvas size in CSS pixels
+ *   a      this scene's alpha (0..1) for crossfading
+ *   accent the chapter's accent colour
+ *   rnd    a stable seeded RNG so backgrounds don't jitter between frames
+ */
+(function () {
+  "use strict";
+
+  // ---- small math + helpers -------------------------------------------------
+  const TAU = Math.PI * 2;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const ease = (t) => t * t * (3 - 2 * t);
+
+  // Deterministic RNG (mulberry32) so star fields stay put frame to frame.
+  function makeRng(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s |= 0; s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgba(hex, a) {
+    const [r, g, b] = hexToRgb(hex);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // A field of stars, reused as the cosmic backdrop almost everywhere.
+  function starfield(ctx, env, count, brightness) {
+    const rnd = makeRng(1337);
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * env.w;
+      const y = rnd() * env.h;
+      const r = rnd() * 1.3 + 0.2;
+      const tw = 0.6 + 0.4 * Math.sin(env.t * (0.5 + rnd() * 2) + i);
+      ctx.globalAlpha = env.a * brightness * tw;
+      ctx.fillStyle = rnd() > 0.85 ? "#bcd3ff" : "#ffffff";
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // A soft radial glow — used for suns, impacts, vents, auroras.
+  function glow(ctx, x, y, radius, color, a) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    g.addColorStop(0, rgba(color, a));
+    g.addColorStop(0.5, rgba(color, a * 0.4));
+    g.addColorStop(1, rgba(color, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, TAU);
+    ctx.fill();
+  }
+
+  // A lit sphere (planet / moon) with a day-night terminator.
+  function planet(ctx, x, y, r, colors, lightAngle, a) {
+    const lx = x + Math.cos(lightAngle) * r * 0.5;
+    const ly = y + Math.sin(lightAngle) * r * 0.5;
+    const g = ctx.createRadialGradient(lx, ly, r * 0.1, x, y, r);
+    colors.forEach((c, i) => g.addColorStop(i / (colors.length - 1), rgba(c, a)));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+    // night-side shading
+    const ng = ctx.createRadialGradient(lx, ly, r * 0.2, x, y, r * 1.05);
+    ng.addColorStop(0, "rgba(0,0,0,0)");
+    ng.addColorStop(1, `rgba(0,0,0,${0.55 * a})`);
+    ctx.fillStyle = ng;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+  }
+
+  // Layered ocean horizon used by several "watery world" scenes.
+  function ocean(ctx, env, top, deep, surface) {
+    const g = ctx.createLinearGradient(0, env.h * 0.45, 0, env.h);
+    g.addColorStop(0, rgba(surface, env.a));
+    g.addColorStop(1, rgba(deep, env.a));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, env.h * 0.5, env.w, env.h * 0.5);
+    // gentle wave lines
+    ctx.strokeStyle = rgba(top, env.a * 0.25);
+    ctx.lineWidth = 1.5;
+    for (let l = 0; l < 6; l++) {
+      const y = env.h * 0.55 + l * env.h * 0.07;
+      ctx.beginPath();
+      for (let x = 0; x <= env.w; x += 16) {
+        const yy = y + Math.sin(x * 0.01 + env.t * (0.6 + l * 0.2) + l) * (6 + l * 2);
+        x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // ---- silhouette creatures -------------------------------------------------
+  // Drawn as simple, recognisable profiles so the eras read at a glance.
+
+  function sauropod(ctx, x, y, s, color, a) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = rgba(color, a);
+    ctx.beginPath();
+    ctx.moveTo(-60, 0);                       // tail tip
+    ctx.quadraticCurveTo(-30, -8, 0, -12);    // back
+    ctx.quadraticCurveTo(20, -16, 30, -40);   // up the neck
+    ctx.quadraticCurveTo(34, -54, 44, -56);   // head
+    ctx.quadraticCurveTo(40, -48, 34, -44);   // jaw
+    ctx.quadraticCurveTo(26, -22, 18, -8);    // front of neck
+    ctx.quadraticCurveTo(12, 0, 18, 22);      // front leg
+    ctx.lineTo(10, 22);
+    ctx.quadraticCurveTo(8, 4, 2, 2);
+    ctx.lineTo(-20, 22);                       // back leg
+    ctx.lineTo(-28, 22);
+    ctx.quadraticCurveTo(-26, 2, -34, 2);
+    ctx.quadraticCurveTo(-50, 4, -60, 0);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function trex(ctx, x, y, s, color, a, stride) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = rgba(color, a);
+    ctx.beginPath();
+    ctx.moveTo(-58, -6);                       // tail
+    ctx.quadraticCurveTo(-30, -20, -8, -30);   // back
+    ctx.quadraticCurveTo(6, -38, 18, -40);     // shoulders/neck
+    ctx.quadraticCurveTo(40, -44, 52, -34);    // head top
+    ctx.lineTo(54, -26);                        // snout
+    ctx.lineTo(40, -24);                        // jaw
+    ctx.quadraticCurveTo(34, -22, 26, -20);
+    ctx.lineTo(20, -10);                        // chest
+    ctx.lineTo(26, 2);                          // tiny arm
+    ctx.lineTo(18, -2);
+    ctx.quadraticCurveTo(14, 6, 12, 18 + stride);  // front leg
+    ctx.lineTo(4, 18 + stride);
+    ctx.quadraticCurveTo(6, 2, 2, -4);
+    ctx.lineTo(-14, 16 - stride);               // back leg
+    ctx.lineTo(-22, 16 - stride);
+    ctx.quadraticCurveTo(-18, -6, -28, -10);
+    ctx.quadraticCurveTo(-46, -6, -58, -6);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function dimetrodon(ctx, x, y, s, color, a) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = rgba(color, a);
+    // body
+    ctx.beginPath();
+    ctx.moveTo(-50, 4);
+    ctx.quadraticCurveTo(-20, -6, 0, -6);
+    ctx.quadraticCurveTo(30, -6, 48, 0);       // toward head
+    ctx.quadraticCurveTo(56, 2, 54, 8);        // snout
+    ctx.lineTo(44, 9);
+    ctx.quadraticCurveTo(30, 12, 0, 12);
+    ctx.lineTo(8, 24);                          // legs
+    ctx.lineTo(2, 24);
+    ctx.lineTo(-4, 12);
+    ctx.lineTo(-30, 12);
+    ctx.lineTo(-24, 24);
+    ctx.lineTo(-30, 24);
+    ctx.lineTo(-38, 12);
+    ctx.quadraticCurveTo(-46, 12, -50, 4);
+    ctx.fill();
+    // sail
+    ctx.beginPath();
+    ctx.moveTo(-34, -4);
+    ctx.quadraticCurveTo(-30, -42, -10, -46);
+    ctx.quadraticCurveTo(14, -44, 26, -4);
+    ctx.quadraticCurveTo(0, -16, -34, -4);
+    ctx.fill();
+    // sail spines
+    ctx.strokeStyle = rgba(color, a * 0.5);
+    ctx.lineWidth = 0.8;
+    for (let i = -28; i < 24; i += 6) {
+      ctx.beginPath();
+      ctx.moveTo(i, -6);
+      ctx.lineTo(i + 4, -40 + Math.abs(i) * 0.4);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function fishShape(ctx, x, y, s, color, a, wig) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = rgba(color, a);
+    ctx.beginPath();
+    ctx.moveTo(-28, 0);
+    ctx.quadraticCurveTo(-10, -10, 12, -6);
+    ctx.quadraticCurveTo(24, -3, 30, 0);       // snout
+    ctx.quadraticCurveTo(24, 3, 12, 6);
+    ctx.quadraticCurveTo(-10, 10, -28, 0);
+    ctx.fill();
+    // tail
+    ctx.beginPath();
+    ctx.moveTo(-26, 0);
+    ctx.lineTo(-40, -10 + wig);
+    ctx.lineTo(-34, 0);
+    ctx.lineTo(-40, 10 + wig);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function trilobite(ctx, x, y, s, color, a) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = rgba(color, a);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 14, 9, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = rgba(color, a * 0.6);
+    for (let i = -8; i <= 8; i += 4) {
+      ctx.beginPath();
+      ctx.ellipse(i, 0, 1.6, 8, 0, 0, TAU);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function jelly(ctx, x, y, s, color, a, t) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    const pulse = 1 + Math.sin(t * 1.5 + x) * 0.08;
+    ctx.fillStyle = rgba(color, a * 0.7);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16 * pulse, 12, 0, Math.PI, TAU);
+    ctx.fill();
+    ctx.strokeStyle = rgba(color, a * 0.5);
+    ctx.lineWidth = 1.2;
+    for (let i = -12; i <= 12; i += 5) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.quadraticCurveTo(i + Math.sin(t * 2 + i) * 4, 20, i, 34);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // A fern/frond, used for forests and the Ediacaran garden.
+  function frond(ctx, x, y, s, color, a, sway) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.strokeStyle = rgba(color, a);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(sway * 6, -30, sway * 12, -60);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 7; i++) {
+      const yy = -i * 8;
+      const px = sway * (i * 1.6);
+      ctx.beginPath();
+      ctx.moveTo(px, yy);
+      ctx.lineTo(px - 10, yy - 5);
+      ctx.moveTo(px, yy);
+      ctx.lineTo(px + 10, yy - 5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ---- the scene registry ---------------------------------------------------
+  const scenes = {};
+
+  // 1. Genesis — collapsing nebula + igniting sun
+  scenes.genesis = function (ctx, env) {
+    starfield(ctx, env, 400, 0.9);
+    const cx = env.w * 0.5, cy = env.h * 0.5;
+    // swirling protoplanetary disk
+    const rnd = makeRng(99);
+    ctx.save();
+    ctx.translate(cx, cy);
+    for (let i = 0; i < 900; i++) {
+      const ang = rnd() * TAU + env.t * 0.05 * (1 - i / 900);
+      const dist = 40 + rnd() * env.w * 0.42;
+      const x = Math.cos(ang) * dist;
+      const y = Math.sin(ang) * dist * 0.32; // flatten into a disk
+      ctx.globalAlpha = env.a * (0.05 + rnd() * 0.25);
+      ctx.fillStyle = rnd() > 0.6 ? env.accent : "#ffd9a0";
+      ctx.fillRect(x, y, 1.4, 1.4);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    const ign = ease(clamp(env.t / 4, 0, 1));
+    glow(ctx, cx, cy, 60 + ign * 160, "#fff1c4", env.a * 0.9);
+    glow(ctx, cx, cy, 20 + ign * 50, "#ffffff", env.a);
+  };
+
+  // 2. Accretion — molten infant Earth
+  scenes.accretion = function (ctx, env) {
+    starfield(ctx, env, 250, 0.5);
+    const cx = env.w * 0.5, cy = env.h * 0.52;
+    const r = Math.min(env.w, env.h) * 0.26;
+    glow(ctx, cx, cy, r * 2.4, "#ff5a2c", env.a * 0.45);
+    planet(ctx, cx, cy, r, ["#ffd28a", "#ff7a2c", "#7a1500"], env.t * 0.2, env.a);
+    // lava cracks (animated noise)
+    const rnd = makeRng(7);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
+    for (let i = 0; i < 40; i++) {
+      const a = rnd() * TAU, d = rnd() * r;
+      const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+      const flick = 0.4 + 0.6 * Math.abs(Math.sin(env.t * 2 + i));
+      ctx.globalAlpha = env.a * flick * 0.8;
+      ctx.fillStyle = "#ffec8a";
+      ctx.fillRect(x, y, 2 + rnd() * 3, 2 + rnd() * 3);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    // infalling meteors
+    for (let i = 0; i < 5; i++) {
+      const p = (env.t * 0.3 + i / 5) % 1;
+      const x = cx + (1 - p) * env.w * 0.4 - env.w * 0.1;
+      const y = cy - r - (1 - p) * 200;
+      ctx.strokeStyle = rgba("#ffcf8a", env.a * (1 - p));
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 16, y + 20); ctx.stroke();
+    }
+  };
+
+  // 3. Theia — the Moon-forming impact
+  scenes.theia = function (ctx, env) {
+    starfield(ctx, env, 250, 0.6);
+    const cx = env.w * 0.42, cy = env.h * 0.55;
+    const r = Math.min(env.w, env.h) * 0.22;
+    const hit = clamp(env.t / 3, 0, 1);
+    planet(ctx, cx, cy, r, ["#ffcaa0", "#c2451c", "#3a0d00"], 0.6, env.a);
+    // debris ring forming the moon
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.3);
+    const rnd = makeRng(55);
+    for (let i = 0; i < 500; i++) {
+      const ang = rnd() * TAU + env.t * 0.4;
+      const dist = r * 1.4 + rnd() * r * 1.6 * hit;
+      ctx.globalAlpha = env.a * (0.1 + rnd() * 0.4);
+      ctx.fillStyle = rnd() > 0.5 ? "#ffd9a0" : "#ff8a4a";
+      ctx.fillRect(Math.cos(ang) * dist, Math.sin(ang) * dist * 0.35, 1.6, 1.6);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    // coalescing moon
+    const mx = cx + Math.cos(env.t * 0.4) * r * 2.6;
+    const my = cy + Math.sin(env.t * 0.4) * r * 0.9;
+    planet(ctx, mx, my, r * (0.22 + hit * 0.12), ["#e9e4dc", "#8a8278", "#2c2a26"], 0.6, env.a);
+    glow(ctx, cx + r * 0.6, cy - r * 0.4, 40, "#fff1c4", env.a * 0.6 * (1 - hit));
+  };
+
+  // 4. Oceans — blue world under heavy clouds
+  scenes.oceans = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#1a2740", env.a));
+    sky.addColorStop(0.5, rgba("#274a6e", env.a));
+    sky.addColorStop(1, rgba("#0a1828", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    ocean(ctx, env, "#aee0ff", "#04223f", "#2f7bb5");
+    // rain
+    ctx.strokeStyle = rgba("#bcd9f5", env.a * 0.35);
+    ctx.lineWidth = 1;
+    const rnd = makeRng(3);
+    for (let i = 0; i < 220; i++) {
+      const x = (rnd() * env.w + env.t * 60) % env.w;
+      const y = (rnd() * env.h + env.t * 600) % (env.h * 0.6);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 14); ctx.stroke();
+    }
+    // lightning flashes
+    const flash = Math.max(0, Math.sin(env.t * 0.7) - 0.97) * 30;
+    if (flash > 0) { ctx.fillStyle = rgba("#cfe6ff", env.a * flash); ctx.fillRect(0, 0, env.w, env.h * 0.5); }
+  };
+
+  // 5. First life — deep-sea vent, lone cell
+  scenes.firstlife = function (ctx, env) {
+    const g = ctx.createLinearGradient(0, 0, 0, env.h);
+    g.addColorStop(0, rgba("#02141f", env.a));
+    g.addColorStop(1, rgba("#001016", env.a));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, env.w, env.h);
+    // hydrothermal vent
+    const vx = env.w * 0.5, vy = env.h;
+    glow(ctx, vx, vy, 220, "#36e0a0", env.a * 0.3);
+    // rising mineral plume / bubbles
+    const rnd = makeRng(21);
+    for (let i = 0; i < 90; i++) {
+      const p = (env.t * 0.15 + rnd()) % 1;
+      const x = vx + Math.sin(p * 6 + i) * 40 * p;
+      const y = env.h - p * env.h * 0.95;
+      ctx.globalAlpha = env.a * (1 - p) * 0.6;
+      ctx.fillStyle = "#7ef0c2";
+      ctx.beginPath(); ctx.arc(x, y, 1.5 + rnd() * 2, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // a single cell, dividing
+    const cx = env.w * 0.5 + Math.sin(env.t * 0.4) * 30;
+    const cy = env.h * 0.4 + Math.cos(env.t * 0.3) * 20;
+    const split = (Math.sin(env.t * 0.5) * 0.5 + 0.5) * 18;
+    drawCell(ctx, cx - split, cy, 26, env.a, env.t);
+    drawCell(ctx, cx + split, cy, 26, env.a, env.t);
+  };
+  function drawCell(ctx, x, y, r, a, t) {
+    const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 2, x, y, r);
+    g.addColorStop(0, rgba("#aef7d8", a * 0.9));
+    g.addColorStop(1, rgba("#1f9c6e", a * 0.3));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = rgba("#d8fff0", a * 0.7); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+    ctx.fillStyle = rgba("#0c5b40", a * 0.8);
+    ctx.beginPath(); ctx.arc(x + Math.sin(t) * 3, y + Math.cos(t) * 3, r * 0.3, 0, TAU); ctx.fill();
+  }
+
+  // 6. Stromatolites — sunlit shallows, microbial mounds
+  scenes.stromatolites = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#ffd9a0", env.a));
+    sky.addColorStop(0.5, rgba("#e9b87a", env.a));
+    sky.addColorStop(1, rgba("#6fa86a", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.75, env.h * 0.2, 200, "#fff6d8", env.a * 0.6);
+    ocean(ctx, env, "#cfeec0", "#1d5a4a", "#3f9c7a");
+    // mounds along the floor
+    const rnd = makeRng(12);
+    for (let i = 0; i < 9; i++) {
+      const x = (i + 0.5) * (env.w / 9) + Math.sin(i) * 10;
+      const baseY = env.h * 0.92;
+      const hgt = 40 + rnd() * 60;
+      ctx.fillStyle = rgba("#23402f", env.a);
+      ctx.beginPath();
+      ctx.moveTo(x - 24, baseY);
+      for (let layer = 0; layer < 8; layer++) {
+        const yy = baseY - layer / 8 * hgt;
+        const ww = 24 * (1 - layer / 10);
+        ctx.lineTo(x - ww, yy);
+      }
+      ctx.lineTo(x, baseY - hgt);
+      for (let layer = 8; layer >= 0; layer--) {
+        const yy = baseY - layer / 8 * hgt;
+        const ww = 24 * (1 - layer / 10);
+        ctx.lineTo(x + ww, yy);
+      }
+      ctx.closePath(); ctx.fill();
+      // oxygen bubbles rising
+      const p = (env.t * 0.3 + i * 0.2) % 1;
+      ctx.globalAlpha = env.a * (1 - p) * 0.7;
+      ctx.fillStyle = "#dffaff";
+      ctx.beginPath(); ctx.arc(x, baseY - hgt - p * 120, 2, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // 7. Great Oxidation — rusting seas, first ice
+  scenes.oxygen = function (ctx, env) {
+    const g = ctx.createLinearGradient(0, 0, 0, env.h);
+    g.addColorStop(0, rgba("#9be8ff", env.a));
+    g.addColorStop(0.5, rgba("#7aa6b8", env.a));
+    g.addColorStop(1, rgba("#7a3a25", env.a));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, env.w, env.h);
+    // banded iron formation stripes at the bottom
+    for (let i = 0; i < 14; i++) {
+      const y = env.h * 0.6 + i * (env.h * 0.4 / 14);
+      ctx.fillStyle = i % 2 ? rgba("#8a2f1c", env.a) : rgba("#3a3030", env.a);
+      ctx.fillRect(0, y, env.w, env.h * 0.4 / 14);
+    }
+    // oxygen bubbles flooding upward everywhere
+    const rnd = makeRng(88);
+    for (let i = 0; i < 120; i++) {
+      const p = (env.t * 0.2 + rnd()) % 1;
+      const x = rnd() * env.w;
+      const y = env.h - p * env.h;
+      ctx.globalAlpha = env.a * (1 - p) * 0.5;
+      ctx.strokeStyle = "#dffaff"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(x, y, 1 + rnd() * 3, 0, TAU); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  };
+
+  // 8. Eukaryotes — endosymbiosis, a cell within a cell
+  scenes.eukaryotes = function (ctx, env) {
+    const g = ctx.createRadialGradient(env.w / 2, env.h / 2, 10, env.w / 2, env.h / 2, env.w * 0.6);
+    g.addColorStop(0, rgba("#3a2a5a", env.a));
+    g.addColorStop(1, rgba("#120a22", env.a));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, env.w, env.h);
+    const cx = env.w / 2, cy = env.h / 2;
+    const r = Math.min(env.w, env.h) * 0.26;
+    // big host cell
+    const cg = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 4, cx, cy, r);
+    cg.addColorStop(0, rgba("#c9aaff", env.a * 0.8));
+    cg.addColorStop(1, rgba("#5b3aa0", env.a * 0.3));
+    ctx.fillStyle = cg;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = rgba("#e6d6ff", env.a * 0.6); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    // nucleus
+    ctx.fillStyle = rgba("#3a1f6e", env.a * 0.8);
+    ctx.beginPath(); ctx.arc(cx + Math.sin(env.t * 0.4) * 8, cy, r * 0.32, 0, TAU); ctx.fill();
+    // mitochondria orbiting inside
+    for (let i = 0; i < 6; i++) {
+      const ang = env.t * 0.5 + i / 6 * TAU;
+      const d = r * 0.62;
+      const mx = cx + Math.cos(ang) * d, my = cy + Math.sin(ang) * d * 0.8;
+      ctx.fillStyle = rgba("#ff8a5a", env.a * 0.9);
+      ctx.save(); ctx.translate(mx, my); ctx.rotate(ang);
+      ctx.beginPath(); ctx.ellipse(0, 0, 12, 6, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+  };
+
+  // 9. Snowball Earth — frozen white world
+  scenes.snowball = function (ctx, env) {
+    starfield(ctx, env, 200, 0.5);
+    const cx = env.w / 2, cy = env.h * 0.52;
+    const r = Math.min(env.w, env.h) * 0.27;
+    glow(ctx, cx, cy, r * 1.8, "#cfe9ff", env.a * 0.4);
+    planet(ctx, cx, cy, r, ["#ffffff", "#dcecff", "#7da6c8"], 0.7, env.a);
+    // cracks of ice
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
+    ctx.strokeStyle = rgba("#9cc4e6", env.a * 0.6); ctx.lineWidth = 1;
+    const rnd = makeRng(404);
+    for (let i = 0; i < 26; i++) {
+      ctx.beginPath();
+      let x = cx + (rnd() - 0.5) * r * 2, y = cy + (rnd() - 0.5) * r * 2;
+      ctx.moveTo(x, y);
+      for (let s = 0; s < 4; s++) { x += (rnd() - 0.5) * 40; y += (rnd() - 0.5) * 40; ctx.lineTo(x, y); }
+      ctx.stroke();
+    }
+    ctx.restore();
+    // drifting snow
+    for (let i = 0; i < 80; i++) {
+      const x = (rnd() * env.w + env.t * 20) % env.w;
+      const y = (rnd() * env.h + env.t * 40) % env.h;
+      ctx.globalAlpha = env.a * 0.5; ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(x, y, 1.2, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  };
+
+  // 10. Ediacara — the quiet garden of fronds
+  scenes.ediacara = function (ctx, env) {
+    const g = ctx.createLinearGradient(0, 0, 0, env.h);
+    g.addColorStop(0, rgba("#3a1f44", env.a));
+    g.addColorStop(1, rgba("#120a1a", env.a));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.5, 0, 400, "#ff9ecb", env.a * 0.15);
+    // floor
+    ctx.fillStyle = rgba("#241327", env.a);
+    ctx.fillRect(0, env.h * 0.85, env.w, env.h * 0.15);
+    // soft fronds swaying
+    const rnd = makeRng(64);
+    for (let i = 0; i < 12; i++) {
+      const x = (i + 0.5) * env.w / 12;
+      const sway = Math.sin(env.t * 0.6 + i) * 0.8;
+      frond(ctx, x, env.h * 0.86, 1.1 + rnd() * 0.6, "#ff9ecb", env.a * 0.85, sway);
+    }
+    // drifting motes
+    for (let i = 0; i < 40; i++) {
+      const x = (rnd() * env.w + env.t * 8) % env.w;
+      const y = (rnd() * env.h * 0.8 + env.t * 5) % (env.h * 0.8);
+      ctx.globalAlpha = env.a * 0.4; ctx.fillStyle = "#ffd6ea";
+      ctx.beginPath(); ctx.arc(x, y, 1.3, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  };
+
+  // 11. Cambrian — explosion of forms, predators and trilobites
+  scenes.cambrian = function (ctx, env) {
+    const g = ctx.createLinearGradient(0, 0, 0, env.h);
+    g.addColorStop(0, rgba("#1d3a52", env.a));
+    g.addColorStop(1, rgba("#06121d", env.a));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, env.w, env.h);
+    // shafts of light
+    for (let i = 0; i < 5; i++) {
+      const x = env.w * (0.2 + i * 0.16);
+      ctx.fillStyle = rgba("#bfe6ff", env.a * 0.05);
+      ctx.beginPath();
+      ctx.moveTo(x, 0); ctx.lineTo(x + 60, 0); ctx.lineTo(x + 120, env.h); ctx.lineTo(x - 60, env.h);
+      ctx.closePath(); ctx.fill();
+    }
+    // Anomalocaris swimming across
+    const ax = (env.t * 60) % (env.w + 200) - 100;
+    drawAnomalocaris(ctx, ax, env.h * 0.35 + Math.sin(env.t) * 20, env.a, env.t);
+    // trilobites on the floor
+    const rnd = makeRng(31);
+    for (let i = 0; i < 8; i++) {
+      const x = (i * 140 + env.t * 12) % (env.w + 60) - 30;
+      trilobite(ctx, x, env.h * 0.88 - rnd() * 20, 1 + rnd(), "#c98a4a", env.a * 0.9);
+    }
+    // swimming fish/larvae specks
+    for (let i = 0; i < 16; i++) {
+      const x = (i * 90 + env.t * 40) % (env.w + 40) - 20;
+      const y = env.h * (0.3 + (i % 5) * 0.1) + Math.sin(env.t * 2 + i) * 12;
+      fishShape(ctx, x, y, 0.5, "#7fd6c2", env.a * 0.8, Math.sin(env.t * 6 + i) * 4);
+    }
+  };
+  function drawAnomalocaris(ctx, x, y, a, t) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = rgba("#d98a5a", a * 0.9);
+    // body
+    ctx.beginPath(); ctx.ellipse(0, 0, 50, 16, 0, 0, TAU); ctx.fill();
+    // side flaps
+    ctx.fillStyle = rgba("#b56a3a", a * 0.8);
+    for (let i = -3; i <= 3; i++) {
+      const fx = i * 12;
+      const flap = Math.sin(t * 4 + i) * 6;
+      ctx.beginPath();
+      ctx.ellipse(fx, 18 + flap, 8, 14, 0, 0, TAU); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(fx, -18 - flap, 8, 14, 0, 0, TAU); ctx.fill();
+    }
+    // grasping arms at front
+    ctx.strokeStyle = rgba("#8a4a28", a * 0.9); ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(50, -4); ctx.quadraticCurveTo(78, 4 + Math.sin(t * 3) * 6, 70, 16); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(50, 4); ctx.quadraticCurveTo(78, 12 + Math.sin(t * 3 + 1) * 6, 70, 24); ctx.stroke();
+    ctx.restore();
+  }
+
+  // 12. Age of fish — Dunkleosteus
+  scenes.fish = function (ctx, env) {
+    const g = ctx.createLinearGradient(0, 0, 0, env.h);
+    g.addColorStop(0, rgba("#15495a", env.a));
+    g.addColorStop(1, rgba("#04181f", env.a));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, env.w, env.h);
+    // schooling fish
+    const rnd = makeRng(72);
+    for (let i = 0; i < 30; i++) {
+      const x = (i * 60 + env.t * 50) % (env.w + 40) - 20;
+      const y = env.h * (0.25 + rnd() * 0.4) + Math.sin(env.t * 2 + i) * 10;
+      fishShape(ctx, x, y, 0.7, "#9fe6d8", env.a * 0.8, Math.sin(env.t * 6 + i) * 4);
+    }
+    // Dunkleosteus cruising
+    const dx = (env.t * 40) % (env.w + 400) - 200;
+    drawDunkle(ctx, dx, env.h * 0.55, env.a, env.t);
+  };
+  function drawDunkle(ctx, x, y, a, t) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = rgba("#36707a", a);
+    ctx.beginPath();
+    ctx.moveTo(-110, 0);
+    ctx.quadraticCurveTo(-60, -36, 0, -34);
+    ctx.quadraticCurveTo(40, -32, 60, -18);     // armoured head
+    ctx.lineTo(74, -14);
+    ctx.lineTo(60, -2);                           // upper jaw blade
+    ctx.lineTo(72, 6);
+    ctx.lineTo(58, 14);                           // lower jaw blade
+    ctx.quadraticCurveTo(40, 30, 0, 32);
+    ctx.quadraticCurveTo(-60, 34, -110, 0);
+    ctx.fill();
+    // tail
+    ctx.beginPath();
+    ctx.moveTo(-100, 0); ctx.lineTo(-140, -22 + Math.sin(t * 3) * 8);
+    ctx.lineTo(-126, 0); ctx.lineTo(-140, 22 + Math.sin(t * 3) * 8); ctx.closePath(); ctx.fill();
+    // eye
+    ctx.fillStyle = rgba("#ffe08a", a); ctx.beginPath(); ctx.arc(40, -10, 4, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  // 13. Onto land — Tiktaalik on the shore
+  scenes.land = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#f2c97a", env.a));
+    sky.addColorStop(0.6, rgba("#c98a4a", env.a));
+    sky.addColorStop(1, rgba("#6fae3a", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.7, env.h * 0.25, 180, "#fff0c8", env.a * 0.5);
+    // water on the left, mud on the right
+    ctx.fillStyle = rgba("#2f7b8a", env.a);
+    ctx.beginPath();
+    ctx.moveTo(0, env.h * 0.7);
+    for (let x = 0; x <= env.w * 0.5; x += 12) {
+      ctx.lineTo(x, env.h * 0.7 + Math.sin(x * 0.02 + env.t) * 6);
+    }
+    ctx.lineTo(env.w * 0.5, env.h); ctx.lineTo(0, env.h); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = rgba("#5a4a2c", env.a);
+    ctx.fillRect(0, env.h * 0.82, env.w, env.h * 0.18);
+    // early plants on the bank
+    for (let i = 0; i < 8; i++) {
+      const x = env.w * 0.55 + i * 50;
+      frond(ctx, x, env.h * 0.84, 0.7, "#3f7a2a", env.a, Math.sin(env.t + i) * 0.4);
+    }
+    // Tiktaalik hauling out at the waterline
+    drawTetrapod(ctx, env.w * 0.42, env.h * 0.8, env.a, env.t);
+  };
+  function drawTetrapod(ctx, x, y, a, t) {
+    ctx.save();
+    ctx.translate(x, y);
+    const crawl = Math.sin(t * 2) * 6;
+    ctx.fillStyle = rgba("#3a5a3a", a);
+    ctx.beginPath();
+    ctx.moveTo(-70, 0);
+    ctx.quadraticCurveTo(-30, -14, 10, -12);
+    ctx.quadraticCurveTo(40, -11, 54, -4);       // flat head
+    ctx.lineTo(60, -2); ctx.lineTo(54, 4);
+    ctx.quadraticCurveTo(30, 10, 0, 10);
+    ctx.quadraticCurveTo(-40, 10, -70, 0);
+    ctx.fill();
+    // stubby limbs propping it up
+    ctx.strokeStyle = rgba("#2c4a2c", a); ctx.lineWidth = 5; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(28, 6); ctx.lineTo(34 + crawl, 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-30, 6); ctx.lineTo(-36 - crawl, 20); ctx.stroke();
+    // eye
+    ctx.fillStyle = rgba("#ffe08a", a); ctx.beginPath(); ctx.arc(38, -4, 3, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  // 14. Carboniferous — coal forest, giant dragonfly
+  scenes.carbon = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#7fb46a", env.a));
+    sky.addColorStop(1, rgba("#1d3a1d", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    // dense forest layers
+    const rnd = makeRng(140);
+    for (let layer = 0; layer < 3; layer++) {
+      const shade = ["#0f2a12", "#1d3f1d", "#2f5a2a"][layer];
+      const baseY = env.h * (0.6 + layer * 0.13);
+      for (let i = 0; i < 8; i++) {
+        const x = rnd() * env.w;
+        const h = env.h * (0.4 - layer * 0.08);
+        ctx.fillStyle = rgba(shade, env.a);
+        ctx.fillRect(x, baseY, 10 - layer * 2, h);
+        // crown of fronds
+        for (let f = 0; f < 5; f++) {
+          frond(ctx, x + 5, baseY, 1 - layer * 0.2, shade, env.a, Math.cos(env.t * 0.5 + f + i) * 0.6);
+        }
+      }
+    }
+    // giant dragonfly
+    const dx = (env.t * 80) % (env.w + 200) - 100;
+    drawDragonfly(ctx, dx, env.h * 0.3 + Math.sin(env.t * 2) * 30, env.a, env.t);
+  };
+  function drawDragonfly(ctx, x, y, a, t) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = rgba("#2c3a1a", a);
+    ctx.beginPath(); ctx.ellipse(0, 0, 40, 4, 0, 0, TAU); ctx.fill(); // body
+    ctx.fillStyle = rgba("#3a5a2a", a);
+    ctx.beginPath(); ctx.arc(34, 0, 6, 0, TAU); ctx.fill();           // head
+    // beating wings
+    const beat = Math.sin(t * 14) * 0.5;
+    ctx.fillStyle = rgba("#bfe6c8", a * 0.4);
+    for (const sx of [-12, 6]) {
+      ctx.save(); ctx.translate(sx, 0); ctx.rotate(beat);
+      ctx.beginPath(); ctx.ellipse(0, -24, 8, 26, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+      ctx.save(); ctx.translate(sx, 0); ctx.rotate(-beat);
+      ctx.beginPath(); ctx.ellipse(0, 24, 8, 26, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // 15. Rise of reptiles — Dimetrodon on dry Pangaea
+  scenes.reptiles = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#f2b06a", env.a));
+    sky.addColorStop(0.5, rgba("#d98a4a", env.a));
+    sky.addColorStop(1, rgba("#8a5a2a", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.2, env.h * 0.3, 160, "#ffe6b0", env.a * 0.5);
+    // distant dunes / mountains
+    for (let layer = 0; layer < 3; layer++) {
+      ctx.fillStyle = rgba(["#7a4a24", "#92592c", "#a86a34"][layer], env.a);
+      ctx.beginPath();
+      ctx.moveTo(0, env.h);
+      for (let x = 0; x <= env.w; x += 40) {
+        ctx.lineTo(x, env.h * (0.6 + layer * 0.08) + Math.sin(x * 0.005 + layer) * 30);
+      }
+      ctx.lineTo(env.w, env.h); ctx.closePath(); ctx.fill();
+    }
+    // ground
+    ctx.fillStyle = rgba("#6a4220", env.a); ctx.fillRect(0, env.h * 0.84, env.w, env.h * 0.16);
+    // a herd of Dimetrodon basking
+    drawShadowOval(ctx, env.w * 0.5, env.h * 0.9, 70, env.a);
+    dimetrodon(ctx, env.w * 0.5, env.h * 0.86, 1.7, "#5a3a1a", env.a);
+    drawShadowOval(ctx, env.w * 0.78, env.h * 0.86, 40, env.a);
+    dimetrodon(ctx, env.w * 0.78, env.h * 0.83, 1.0, "#4a3018", env.a * 0.9);
+  };
+  function drawShadowOval(ctx, x, y, w, a) {
+    ctx.fillStyle = `rgba(0,0,0,${0.25 * a})`;
+    ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.18, 0, 0, TAU); ctx.fill();
+  }
+
+  // 16. The Great Dying — volcanic apocalypse
+  scenes.permian_ext = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#2a0a08", env.a));
+    sky.addColorStop(0.5, rgba("#7a1a0a", env.a));
+    sky.addColorStop(1, rgba("#1a0604", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    drawVolcanoes(ctx, env);
+    // ash falling
+    const rnd = makeRng(202);
+    for (let i = 0; i < 160; i++) {
+      const x = (rnd() * env.w + env.t * 15) % env.w;
+      const y = (rnd() * env.h + env.t * 70) % env.h;
+      ctx.globalAlpha = env.a * 0.4; ctx.fillStyle = rnd() > 0.5 ? "#3a2a26" : "#705a52";
+      ctx.fillRect(x, y, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+    // red haze pulse
+    ctx.fillStyle = rgba("#ff2d10", env.a * (0.05 + 0.05 * Math.sin(env.t * 0.8)));
+    ctx.fillRect(0, 0, env.w, env.h);
+  };
+  function drawVolcanoes(ctx, env) {
+    const rnd = makeRng(909);
+    for (let i = 0; i < 4; i++) {
+      const x = env.w * (0.15 + i * 0.24);
+      const baseY = env.h;
+      const peak = env.h * (0.55 + rnd() * 0.1);
+      ctx.fillStyle = rgba("#1a0e0a", env.a);
+      ctx.beginPath();
+      ctx.moveTo(x - 120, baseY); ctx.lineTo(x, peak); ctx.lineTo(x + 120, baseY); ctx.closePath(); ctx.fill();
+      // lava glow at the vent
+      glow(ctx, x, peak, 60, "#ff7a1a", env.a * 0.8);
+      // erupting embers
+      for (let e = 0; e < 14; e++) {
+        const p = (env.t * 0.5 + e / 14 + i) % 1;
+        const ex = x + Math.sin(e * 2 + i) * 60 * p;
+        const ey = peak - p * 220;
+        ctx.globalAlpha = env.a * (1 - p);
+        ctx.fillStyle = "#ffca5a";
+        ctx.beginPath(); ctx.arc(ex, ey, 2 + (1 - p) * 2, 0, TAU); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // lava flow down the slope
+      ctx.strokeStyle = rgba("#ff5a1a", env.a * 0.8); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x, peak);
+      ctx.quadraticCurveTo(x + 30, env.h * 0.8, x + 10, baseY); ctx.stroke();
+    }
+  }
+
+  // 17. Triassic — first small, upright dinosaurs
+  scenes.triassic = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#e6b06a", env.a));
+    sky.addColorStop(1, rgba("#7a5a2a", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.8, env.h * 0.2, 160, "#ffe6b0", env.a * 0.5);
+    // rift valley with smoking fissure (Pangaea cracking)
+    ctx.fillStyle = rgba("#5a3a1a", env.a); ctx.fillRect(0, env.h * 0.82, env.w, env.h * 0.18);
+    ctx.strokeStyle = rgba("#ff7a3a", env.a * 0.6); ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(env.w * 0.1, env.h * 0.9);
+    for (let x = env.w * 0.1; x < env.w * 0.9; x += 30) ctx.lineTo(x, env.h * 0.9 + Math.sin(x) * 6);
+    ctx.stroke();
+    // small dinosaurs running
+    for (let i = 0; i < 3; i++) {
+      const x = (env.t * 70 + i * 200) % (env.w + 100) - 50;
+      drawShadowOval(ctx, x, env.h * 0.82, 22, env.a);
+      drawSmallDino(ctx, x, env.h * 0.8, 0.9, "#3a2a14", env.a, Math.sin(env.t * 8 + i) * 4);
+    }
+  };
+  function drawSmallDino(ctx, x, y, s, color, a, stride) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.fillStyle = rgba(color, a);
+    ctx.beginPath();
+    ctx.moveTo(-34, -6);
+    ctx.quadraticCurveTo(-16, -16, -2, -18);
+    ctx.quadraticCurveTo(8, -20, 16, -16);     // neck
+    ctx.quadraticCurveTo(24, -14, 26, -20);    // head
+    ctx.lineTo(30, -18); ctx.lineTo(24, -12);
+    ctx.lineTo(12, -8); ctx.lineTo(14, 0);      // tiny arm
+    ctx.lineTo(8, -4);
+    ctx.lineTo(6, 12 + stride);                 // leg
+    ctx.lineTo(0, 12 + stride);
+    ctx.lineTo(2, -4);
+    ctx.lineTo(-8, 12 - stride);                // leg
+    ctx.lineTo(-14, 12 - stride);
+    ctx.quadraticCurveTo(-12, -6, -20, -8);
+    ctx.quadraticCurveTo(-30, -8, -34, -6);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 18. End-Triassic — the door opens (rift volcanism, dawn light)
+  scenes.triassic_ext = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#3a1a0a", env.a));
+    sky.addColorStop(0.5, rgba("#aa4a1a", env.a));
+    sky.addColorStop(1, rgba("#2a1206", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    // a great rift glowing across the middle (Pangaea splitting)
+    glow(ctx, env.w * 0.5, env.h * 0.7, env.w * 0.6, "#ff6a1a", env.a * 0.4);
+    ctx.fillStyle = rgba("#1a0e08", env.a);
+    ctx.beginPath();
+    ctx.moveTo(0, env.h * 0.62);
+    for (let x = 0; x <= env.w; x += 30) ctx.lineTo(x, env.h * 0.62 + Math.sin(x * 0.01) * 16);
+    ctx.lineTo(env.w, env.h); ctx.lineTo(0, env.h); ctx.closePath(); ctx.fill();
+    // glowing fissure line
+    ctx.strokeStyle = rgba("#ffca5a", env.a * 0.9); ctx.lineWidth = 4;
+    ctx.beginPath();
+    for (let x = 0; x <= env.w; x += 20) {
+      const y = env.h * 0.74 + Math.sin(x * 0.02 + env.t) * 8;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // embers rising
+    const rnd = makeRng(77);
+    for (let i = 0; i < 60; i++) {
+      const p = (env.t * 0.3 + rnd()) % 1;
+      const x = rnd() * env.w;
+      const y = env.h * 0.74 - p * env.h * 0.6;
+      ctx.globalAlpha = env.a * (1 - p) * 0.7; ctx.fillStyle = "#ffb24a";
+      ctx.beginPath(); ctx.arc(x, y, 1.5, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  };
+
+  // 19. Jurassic — giants and the first birds
+  scenes.jurassic = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#bfe0f2", env.a));
+    sky.addColorStop(0.6, rgba("#8ac0a0", env.a));
+    sky.addColorStop(1, rgba("#3a6a4a", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.18, env.h * 0.22, 140, "#fff3d0", env.a * 0.5);
+    // conifer hills
+    for (let layer = 0; layer < 2; layer++) {
+      ctx.fillStyle = rgba(["#2f5a3a", "#3f7a4a"][layer], env.a);
+      ctx.beginPath(); ctx.moveTo(0, env.h);
+      for (let x = 0; x <= env.w; x += 40) ctx.lineTo(x, env.h * (0.62 + layer * 0.1) + Math.sin(x * 0.006 + layer) * 26);
+      ctx.lineTo(env.w, env.h); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = rgba("#2a4a30", env.a); ctx.fillRect(0, env.h * 0.85, env.w, env.h * 0.15);
+    // a grazing sauropod, neck swaying
+    drawShadowOval(ctx, env.w * 0.4, env.h * 0.9, 90, env.a);
+    sauropod(ctx, env.w * 0.4, env.h * 0.88, 2.2, "#3a5a3a", env.a);
+    // a second, distant
+    sauropod(ctx, env.w * 0.72, env.h * 0.78, 1.2, "#2f4a30", env.a * 0.8);
+    // Archaeopteryx gliding
+    for (let i = 0; i < 3; i++) {
+      const x = (env.t * 50 + i * 160) % (env.w + 100) - 50;
+      drawBird(ctx, x, env.h * 0.28 + Math.sin(env.t * 1.5 + i) * 24, env.a, env.t + i);
+    }
+  };
+  function drawBird(ctx, x, y, a, t) {
+    ctx.save(); ctx.translate(x, y);
+    const flap = Math.sin(t * 5) * 0.5;
+    ctx.strokeStyle = rgba("#2a2a2a", a); ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-14, -flap * 10); ctx.quadraticCurveTo(0, flap * 6, 0, 0);
+    ctx.quadraticCurveTo(0, flap * 6, 14, -flap * 10); ctx.stroke();
+    ctx.restore();
+  }
+
+  // 20. Cretaceous — T. rex reign, flowers, Triceratops
+  scenes.cretaceous = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#f2c89a", env.a));
+    sky.addColorStop(0.5, rgba("#c99a6a", env.a));
+    sky.addColorStop(1, rgba("#5a6a3a", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.75, env.h * 0.2, 160, "#fff0c8", env.a * 0.5);
+    // hills
+    ctx.fillStyle = rgba("#4a5a2a", env.a);
+    ctx.beginPath(); ctx.moveTo(0, env.h);
+    for (let x = 0; x <= env.w; x += 40) ctx.lineTo(x, env.h * 0.66 + Math.sin(x * 0.006) * 26);
+    ctx.lineTo(env.w, env.h); ctx.closePath(); ctx.fill();
+    // flowering ground
+    ctx.fillStyle = rgba("#3a4a22", env.a); ctx.fillRect(0, env.h * 0.82, env.w, env.h * 0.18);
+    const rnd = makeRng(150);
+    for (let i = 0; i < 40; i++) {
+      const x = rnd() * env.w, y = env.h * (0.84 + rnd() * 0.14);
+      ctx.fillStyle = rgba(["#ff6a8a", "#ffd24a", "#fff", "#c98aff"][i % 4], env.a * 0.9);
+      ctx.beginPath(); ctx.arc(x, y, 2.4, 0, TAU); ctx.fill();
+    }
+    // a Triceratops grazing on the right
+    drawShadowOval(ctx, env.w * 0.78, env.h * 0.9, 60, env.a);
+    drawTriceratops(ctx, env.w * 0.78, env.h * 0.86, 1.5, "#5a4a2a", env.a);
+    // T. rex striding in, the apex
+    const tx = env.w * 0.35 + Math.sin(env.t * 0.3) * 30;
+    drawShadowOval(ctx, tx, env.h * 0.9, 60, env.a);
+    trex(ctx, tx, env.h * 0.86, 2.0, "#3a2a1a", env.a, Math.sin(env.t * 2) * 4);
+  };
+  function drawTriceratops(ctx, x, y, s, color, a) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(-s, s); // face left
+    ctx.fillStyle = rgba(color, a);
+    ctx.beginPath();
+    ctx.moveTo(-50, 0);
+    ctx.quadraticCurveTo(-20, -18, 14, -16);     // back
+    ctx.quadraticCurveTo(30, -16, 38, -22);      // frill top
+    ctx.quadraticCurveTo(50, -16, 50, -2);       // frill
+    ctx.lineTo(44, -10);                          // horn base
+    ctx.lineTo(58, -16);                          // brow horn
+    ctx.lineTo(46, -4);
+    ctx.lineTo(56, 2);                            // nose horn
+    ctx.lineTo(44, 4);
+    ctx.quadraticCurveTo(30, 12, 0, 12);
+    ctx.lineTo(8, 26); ctx.lineTo(2, 26); ctx.lineTo(-2, 12);   // legs
+    ctx.lineTo(-30, 12); ctx.lineTo(-24, 26); ctx.lineTo(-30, 26); ctx.lineTo(-38, 12);
+    ctx.quadraticCurveTo(-46, 10, -50, 0);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 21. K-Pg — the asteroid and the long dark
+  scenes.kpg_ext = function (ctx, env) {
+    const impact = clamp(env.t / 2.5, 0, 1); // 0 incoming, 1 aftermath
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#1a0604", env.a));
+    sky.addColorStop(0.5, rgba(lerpHex("#3a1408", "#7a1a06", impact), env.a));
+    sky.addColorStop(1, rgba("#0a0202", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    // the incoming asteroid streaks from upper-left
+    if (impact < 1) {
+      const p = impact;
+      const ax = lerp(-100, env.w * 0.5, p);
+      const ay = lerp(-100, env.h * 0.78, p);
+      // fiery tail
+      ctx.strokeStyle = rgba("#ffd06a", env.a);
+      ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax - 160 * (1 - p) - 40, ay - 120 * (1 - p) - 30); ctx.stroke();
+      glow(ctx, ax, ay, 40, "#fff", env.a);
+      ctx.fillStyle = rgba("#2a1a14", env.a);
+      ctx.beginPath(); ctx.arc(ax, ay, 14, 0, TAU); ctx.fill();
+    }
+    // the impact flash and shockwave
+    if (impact >= 0.98) {
+      const aft = (env.t - 2.5);
+      glow(ctx, env.w * 0.5, env.h * 0.8, 200 + aft * 200, "#ff8a2a", env.a * Math.max(0, 0.8 - aft * 0.15));
+      // expanding shock ring
+      const ring = (aft * 300) % env.w;
+      ctx.strokeStyle = rgba("#ffca6a", env.a * Math.max(0, 0.6 - aft * 0.1));
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(env.w * 0.5, env.h * 0.8, ring, 0, TAU); ctx.stroke();
+      // rain of molten ejecta
+      const rnd = makeRng(660);
+      for (let i = 0; i < 120; i++) {
+        const pp = (env.t * 0.4 + rnd()) % 1;
+        const x = rnd() * env.w;
+        const y = pp * env.h;
+        ctx.globalAlpha = env.a * (1 - pp) * 0.7; ctx.strokeStyle = "#ffb24a"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 4, y + 16); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    // silhouetted dino watching the sky
+    drawSilhouetteDino(ctx, env.w * 0.2, env.h * 0.92, env.a);
+  };
+  function drawSilhouetteDino(ctx, x, y, a) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = `rgba(0,0,0,${0.9 * a})`;
+    ctx.beginPath();
+    ctx.moveTo(-40, 0);
+    ctx.quadraticCurveTo(-20, -30, -6, -46);
+    ctx.quadraticCurveTo(2, -56, 14, -54);
+    ctx.lineTo(18, -48); ctx.lineTo(8, -44);
+    ctx.quadraticCurveTo(0, -26, -2, -2);
+    ctx.lineTo(4, 0); ctx.lineTo(-2, 0);
+    ctx.lineTo(-10, 0);
+    ctx.quadraticCurveTo(-26, 0, -40, 0);
+    ctx.fill();
+    ctx.restore();
+  }
+  function lerpHex(h1, h2, t) {
+    const a = hexToRgb(h1), b = hexToRgb(h2);
+    const c = a.map((v, i) => Math.round(lerp(v, b[i], t)));
+    return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  // 22. Mammals — green recovery, small mammals, a whale ancestor
+  scenes.mammals = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#cfe6f2", env.a));
+    sky.addColorStop(0.6, rgba("#a0c98a", env.a));
+    sky.addColorStop(1, rgba("#5a7a3a", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    glow(ctx, env.w * 0.8, env.h * 0.2, 150, "#fff6e0", env.a * 0.5);
+    // rolling grassland
+    for (let layer = 0; layer < 2; layer++) {
+      ctx.fillStyle = rgba(["#5a8a3a", "#7aae4a"][layer], env.a);
+      ctx.beginPath(); ctx.moveTo(0, env.h);
+      for (let x = 0; x <= env.w; x += 40) ctx.lineTo(x, env.h * (0.66 + layer * 0.1) + Math.sin(x * 0.005 + layer) * 20);
+      ctx.lineTo(env.w, env.h); ctx.closePath(); ctx.fill();
+    }
+    // small mammals scurrying
+    for (let i = 0; i < 4; i++) {
+      const x = (env.t * 45 + i * 130) % (env.w + 80) - 40;
+      drawMammal(ctx, x, env.h * 0.86 + (i % 2) * 20, 0.8, "#6a4a2a", env.a, Math.sin(env.t * 8 + i) * 3);
+    }
+    // primate ancestor up in a tree on the right
+    drawTree(ctx, env.w * 0.85, env.h * 0.88, env.a, env.t);
+  };
+  function drawMammal(ctx, x, y, s, color, a, bob) {
+    ctx.save(); ctx.translate(x, y + bob); ctx.scale(s, s);
+    ctx.fillStyle = rgba(color, a);
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 9, 0, 0, TAU); ctx.fill(); // body
+    ctx.beginPath(); ctx.arc(16, -4, 6, 0, TAU); ctx.fill();          // head
+    ctx.strokeStyle = rgba(color, a); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-18, 0); ctx.quadraticCurveTo(-30, -8, -34, 0); ctx.stroke(); // tail
+    // legs
+    ctx.beginPath(); ctx.moveTo(8, 8); ctx.lineTo(10, 16); ctx.moveTo(-8, 8); ctx.lineTo(-10, 16); ctx.stroke();
+    ctx.restore();
+  }
+  function drawTree(ctx, x, y, a, t) {
+    ctx.strokeStyle = rgba("#4a3420", a); ctx.lineWidth = 10; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 120); ctx.stroke();
+    ctx.fillStyle = rgba("#3f7a3a", a);
+    ctx.beginPath(); ctx.arc(x, y - 140, 50, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(x - 40, y - 110, 34, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 40, y - 110, 34, 0, TAU); ctx.fill();
+    // a small primate clinging
+    ctx.fillStyle = rgba("#3a2410", a);
+    const px = x - 30 + Math.sin(t) * 4;
+    ctx.beginPath(); ctx.arc(px, y - 96, 7, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(px, y - 82, 5, 9, 0, 0, TAU); ctx.fill();
+  }
+
+  // 23. Humans — savanna, fire, a figure looking up at stars
+  scenes.humans = function (ctx, env) {
+    const sky = ctx.createLinearGradient(0, 0, 0, env.h);
+    sky.addColorStop(0, rgba("#0a1430", env.a));
+    sky.addColorStop(0.5, rgba("#3a2a4a", env.a));
+    sky.addColorStop(1, rgba("#1a1020", env.a));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, env.w, env.h);
+    starfield(ctx, env, 300, 0.9);
+    // the Milky Way band
+    ctx.save();
+    ctx.globalAlpha = env.a * 0.15;
+    const mg = ctx.createLinearGradient(0, env.h * 0.1, env.w, env.h * 0.4);
+    mg.addColorStop(0, "rgba(180,200,255,0)");
+    mg.addColorStop(0.5, "rgba(200,210,255,0.8)");
+    mg.addColorStop(1, "rgba(180,200,255,0)");
+    ctx.fillStyle = mg;
+    ctx.fillRect(0, env.h * 0.12, env.w, env.h * 0.2);
+    ctx.restore();
+    // horizon
+    ctx.fillStyle = rgba("#0c0810", env.a); ctx.fillRect(0, env.h * 0.78, env.w, env.h * 0.22);
+    // a campfire
+    const fx = env.w * 0.62, fy = env.h * 0.8;
+    glow(ctx, fx, fy, 90 + Math.sin(env.t * 6) * 8, "#ffb24a", env.a * 0.7);
+    for (let i = 0; i < 8; i++) {
+      const p = (env.t * 1.5 + i / 8) % 1;
+      ctx.globalAlpha = env.a * (1 - p);
+      ctx.fillStyle = i % 2 ? "#ffca5a" : "#ff7a2a";
+      ctx.beginPath(); ctx.arc(fx + Math.sin(p * 8 + i) * 6, fy - p * 40, (1 - p) * 6 + 1, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // a human figure, standing, looking up
+    drawHuman(ctx, env.w * 0.4, env.h * 0.8, env.a);
+  };
+  function drawHuman(ctx, x, y, a) {
+    ctx.fillStyle = `rgba(8,6,10,${a})`;
+    // head tilted up
+    ctx.beginPath(); ctx.arc(x, y - 70, 7, 0, TAU); ctx.fill();
+    // body
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y - 60);
+    ctx.lineTo(x + 6, y - 60);
+    ctx.lineTo(x + 4, y - 24);
+    ctx.lineTo(x - 4, y - 24);
+    ctx.closePath(); ctx.fill();
+    // legs
+    ctx.strokeStyle = `rgba(8,6,10,${a})`; ctx.lineWidth = 5; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x - 2, y - 26); ctx.lineTo(x - 6, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 2, y - 26); ctx.lineTo(x + 6, y); ctx.stroke();
+    // one arm raised toward the sky
+    ctx.beginPath(); ctx.moveTo(x + 4, y - 54); ctx.lineTo(x + 18, y - 74); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 4, y - 54); ctx.lineTo(x - 10, y - 36); ctx.stroke();
+  }
+
+  // expose
+  window.SCENES = scenes;
+})();
+
+/*
+ * app.js
+ * Wires the timeline data to the DOM and to the canvas scene engine.
+ *   - Builds a full-screen story panel for every chapter.
+ *   - Tracks scroll to decide the active chapter + a smooth local progress.
+ *   - Drives the deep-time clock, the era label, the progress bar and rail.
+ *   - Runs the animation loop, crossfading scenes as chapters change.
+ */
+(function () {
+  "use strict";
+
+  const TIMELINE = window.TIMELINE;
+  const SCENES = window.SCENES;
+
+  // ---- build the story panels ----------------------------------------------
+  const story = document.getElementById("story");
+  const rail = document.getElementById("rail");
+
+  TIMELINE.forEach((c, i) => {
+    const panel = document.createElement("section");
+    panel.className = "panel";
+    panel.dataset.scene = c.id;
+    panel.dataset.index = i;
+    panel.style.setProperty("--accent", c.accent);
+
+    const factList = c.facts.map((f) => `<li>${f}</li>`).join("");
+
+    const extinctionBlock = c.extinction
+      ? `<div class="panel__extinction">
+           <div class="ext__row"><span class="ext__label">DEATH TOLL</span><span class="ext__val">${c.extinction.kills}</span></div>
+           <div class="ext__row"><span class="ext__label">CAUSE</span><span class="ext__val">${c.extinction.cause}</span></div>
+         </div>`
+      : "";
+
+    panel.innerHTML = `
+      <div class="panel__card${c.extinction ? " panel__card--extinction" : ""}">
+        <p class="panel__tag">${c.tag}</p>
+        <h2 class="panel__title">${c.title}</h2>
+        <p class="panel__lead">${c.lead}</p>
+        ${extinctionBlock}
+        <ul class="panel__facts">${factList}</ul>
+      </div>`;
+    story.appendChild(panel);
+
+    // rail dot
+    const dot = document.createElement("button");
+    dot.className = "rail__item";
+    dot.dataset.index = i;
+    dot.innerHTML = `<span class="rail__tick"></span><span class="rail__label">${c.rail}</span>`;
+    dot.addEventListener("click", () => {
+      panel.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    rail.appendChild(dot);
+  });
+
+  const panels = Array.from(document.querySelectorAll(".panel"));
+  const railItems = Array.from(document.querySelectorAll(".rail__item"));
+
+  // ---- canvas setup ---------------------------------------------------------
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  let DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let W = 0, H = 0;
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  // ---- HUD elements ---------------------------------------------------------
+  const clockAge = document.getElementById("clockAge");
+  const clockEra = document.getElementById("clockEra");
+  const progressFill = document.getElementById("progressFill");
+  const progressPct = document.getElementById("progressPct");
+  const hud = document.getElementById("hud");
+
+  // Format a year-count (in millions of years ago) into human-readable text.
+  function formatAge(ma) {
+    if (ma <= 0.0001) return ['Today', ''];
+    if (ma < 1) {
+      const years = Math.round(ma * 1e6 / 1000) * 1000; // round to nearest thousand
+      return [years.toLocaleString(), 'years ago'];
+    }
+    if (ma >= 1000) {
+      const billions = (ma / 1000).toFixed(2);
+      return [billions, 'billion years ago'];
+    }
+    return [Math.round(ma).toLocaleString(), 'million years ago'];
+  }
+
+  // ---- scroll state ---------------------------------------------------------
+  let activeIndex = 0;
+  let localProgress = 0; // 0..1 within the active chapter
+  let displayAge = TIMELINE[0].age;
+
+  function computeScrollState() {
+    const mid = window.innerHeight / 2;
+    let best = 0, bestDist = Infinity;
+    panels.forEach((p, i) => {
+      const r = p.getBoundingClientRect();
+      const center = r.top + r.height / 2;
+      const dist = Math.abs(center - mid);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    activeIndex = best;
+
+    // local progress through the active panel (0 at top entering, 1 at bottom leaving)
+    const r = panels[activeIndex].getBoundingClientRect();
+    localProgress = clamp((mid - r.top) / r.height, 0, 1);
+
+    // overall document progress for the bar
+    const doc = document.documentElement;
+    const total = doc.scrollHeight - window.innerHeight;
+    const pct = total > 0 ? clamp(window.scrollY / total, 0, 1) : 0;
+    progressFill.style.width = (pct * 100).toFixed(1) + "%";
+    progressPct.textContent = Math.round(pct * 100) + "%";
+
+    // fade the HUD in once we leave the hero
+    hud.classList.toggle("hud--visible", window.scrollY > window.innerHeight * 0.5);
+
+    // rail highlight
+    railItems.forEach((it, i) => it.classList.toggle("rail__item--active", i === activeIndex));
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  // ---- scene crossfade engine ----------------------------------------------
+  let curScene = TIMELINE[0].id;
+  let prevScene = null;
+  let fade = 1;              // 0..1 progress of crossfade into curScene
+  let curAccent = TIMELINE[0].accent;
+  let prevAccent = TIMELINE[0].accent;
+
+  function setScene(id, accent) {
+    if (id === curScene) return;
+    prevScene = curScene;
+    prevAccent = curAccent;
+    curScene = id;
+    curAccent = accent;
+    fade = 0;
+  }
+
+  // ---- animation loop -------------------------------------------------------
+  let start = performance.now();
+  const sceneClocks = {}; // per-scene local time so each animation starts at 0
+
+  function frame(now) {
+    const t = (now - start) / 1000;
+
+    computeScrollState();
+
+    // pick the active scene
+    const active = TIMELINE[activeIndex];
+    setScene(active.id, active.accent);
+
+    // advance crossfade
+    if (fade < 1) fade = Math.min(1, fade + 0.035);
+
+    // smoothly interpolate the displayed deep-time age between chapters
+    const next = TIMELINE[Math.min(activeIndex + 1, TIMELINE.length - 1)];
+    const targetAge = lerp(active.age, next.age, localProgress);
+    displayAge = lerp(displayAge, targetAge, 0.12);
+    const [num, unit] = formatAge(displayAge);
+    clockAge.innerHTML = unit ? `${num} <em>${unit}</em>` : `<em>${num}</em>`;
+    clockEra.textContent = active.era;
+
+    // track per-scene clocks (reset when a scene becomes current)
+    if (!(curScene in sceneClocks)) sceneClocks[curScene] = t;
+    if (prevScene && !(prevScene in sceneClocks)) sceneClocks[prevScene] = t;
+
+    // paint
+    ctx.clearRect(0, 0, W, H);
+    // deep space base wash, tinted by the active accent
+    const base = ctx.createLinearGradient(0, 0, 0, H);
+    base.addColorStop(0, "#05060c");
+    base.addColorStop(1, "#02030a");
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, W, H);
+
+    // draw previous scene fading out, then current scene fading in
+    if (prevScene && fade < 1 && SCENES[prevScene]) {
+      SCENES[prevScene](ctx, {
+        t: t - (sceneClocks[prevScene] || t), w: W, h: H,
+        a: 1 - fade, accent: prevAccent,
+      });
+    }
+    if (SCENES[curScene]) {
+      SCENES[curScene](ctx, {
+        t: t - (sceneClocks[curScene] || t), w: W, h: H,
+        a: fade, accent: curAccent,
+      });
+    }
+
+    // subtle cinematic vignette over everything
+    const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.85);
+    vig.addColorStop(0, "rgba(0,0,0,0)");
+    vig.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, W, H);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---- misc controls --------------------------------------------------------
+  document.getElementById("restartBtn").addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  // keyboard: arrow / space jumps chapter to chapter
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "PageDown") {
+      e.preventDefault();
+      const target = panels[Math.min(activeIndex + 1, panels.length - 1)];
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+      e.preventDefault();
+      if (activeIndex === 0) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+      const target = panels[Math.max(activeIndex - 1, 0)];
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+})();
+
+  </script>
+</body>
+</html>
