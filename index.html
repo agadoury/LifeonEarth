@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life on Earth — A Journey Through Deep Time</title>
+  <meta name="description" content="A live, cinematic scroll through 4.6 billion years: from the birth of the solar system to the rise of dinosaurs, the great extinctions, and us." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- The animated universe lives here, behind everything -->
+  <canvas id="stage" aria-hidden="true"></canvas>
+
+  <!-- Persistent HUD: the deep-time clock -->
+  <header class="hud" id="hud">
+    <div class="hud__brand">
+      <span class="hud__dot"></span>
+      <span>LIFE ON EARTH</span>
+    </div>
+    <div class="hud__clock">
+      <div class="hud__age" id="clockAge">4,600 <em>million years ago</em></div>
+      <div class="hud__era" id="clockEra">The Solar System Ignites</div>
+    </div>
+    <div class="hud__progress">
+      <div class="hud__bar"><span id="progressFill"></span></div>
+      <div class="hud__pct" id="progressPct">0%</div>
+    </div>
+  </header>
+
+  <!-- Vertical era rail -->
+  <nav class="rail" id="rail" aria-label="Eras"></nav>
+
+  <!-- Intro -->
+  <section class="hero" id="hero" data-scene="genesis">
+    <div class="hero__inner">
+      <p class="hero__kicker">A SCROLL THROUGH DEEP TIME</p>
+      <h1 class="hero__title">Life on Earth</h1>
+      <p class="hero__sub">4.6 billion years compressed into a single descent. From a cloud of dust to the dinosaurs, the great dyings, and the strange apes who learned to look back.</p>
+      <div class="hero__scroll">
+        <span>BEGIN THE DESCENT</span>
+        <div class="hero__arrow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Story panels are injected by app.js -->
+  <main id="story"></main>
+
+  <!-- Outro -->
+  <section class="finale" id="finale">
+    <div class="finale__inner">
+      <h2>Now.</h2>
+      <p>If all 4.6 billion years were a single day, complex animals appear after 9 p.m., the dinosaurs reign through the late evening, and all of recorded human history is the last <strong>0.0&hairsp;3&nbsp;seconds</strong> before midnight.</p>
+      <p class="finale__small">You have just fallen through deep time. The planet keeps going — with or without us.</p>
+      <button class="finale__btn" id="restartBtn">↑ Return to the beginning</button>
+    </div>
+  </section>
+
+  <script src="js/timeline-data.js"></script>
+  <script src="js/scenes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

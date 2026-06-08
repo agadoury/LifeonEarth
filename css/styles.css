@@ -1,0 +1,311 @@
+/* =========================================================================
+   Life on Earth — a cinematic scroll through deep time
+   ========================================================================= */
+
+:root {
+  --bg: #05060c;
+  --ink: #f4f1ea;
+  --ink-dim: #b9b4ad;
+  --accent: #ff8a3d;
+  --serif: "Cinzel", Georgia, serif;
+  --sans: "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The animated universe, pinned behind everything ------------------------- */
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  display: block;
+}
+
+/* ====================== HUD: the deep-time clock ========================== */
+.hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.6rem;
+  background: linear-gradient(180deg, rgba(5,6,12,0.85) 0%, rgba(5,6,12,0) 100%);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity .6s ease, transform .6s ease;
+  pointer-events: none;
+}
+.hud--visible { opacity: 1; transform: translateY(0); }
+
+.hud__brand {
+  display: flex; align-items: center; gap: .55rem;
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .28em;
+  color: var(--ink-dim);
+}
+.hud__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent, #ff8a3d);
+  box-shadow: 0 0 12px var(--accent, #ff8a3d);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+.hud__clock { text-align: center; flex: 1; }
+.hud__age {
+  font-family: var(--mono);
+  font-size: clamp(1rem, 2.6vw, 1.55rem);
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: #fff;
+  text-shadow: 0 0 24px rgba(255,180,90,0.25);
+}
+.hud__age em { font-style: normal; font-weight: 400; font-size: .62em; color: var(--ink-dim); letter-spacing: .12em; }
+.hud__era {
+  font-family: var(--serif);
+  font-size: .82rem;
+  letter-spacing: .12em;
+  color: var(--ink-dim);
+  margin-top: .15rem;
+}
+
+.hud__progress { display: flex; align-items: center; gap: .6rem; min-width: 120px; justify-content: flex-end; }
+.hud__bar { width: 90px; height: 3px; background: rgba(255,255,255,0.14); border-radius: 2px; overflow: hidden; }
+.hud__bar span { display: block; height: 100%; width: 0%; background: var(--accent, #ff8a3d); box-shadow: 0 0 8px var(--accent); transition: width .15s linear; }
+.hud__pct { font-family: var(--mono); font-size: .72rem; color: var(--ink-dim); min-width: 34px; text-align: right; }
+
+/* ====================== Vertical era rail ================================= */
+.rail {
+  position: fixed;
+  right: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  max-height: 78vh;
+}
+.rail__item {
+  display: flex; align-items: center; gap: .5rem;
+  background: none; border: none; cursor: pointer;
+  color: var(--ink-dim);
+  padding: .12rem 0;
+  justify-content: flex-end;
+  font-family: var(--mono);
+  opacity: .55;
+  transition: opacity .25s ease;
+}
+.rail__item:hover { opacity: 1; }
+.rail__tick {
+  width: 18px; height: 2px; border-radius: 2px;
+  background: currentColor;
+  transition: width .25s ease, background .25s ease;
+}
+.rail__label {
+  font-size: .62rem; letter-spacing: .08em;
+  white-space: nowrap;
+  max-width: 0; overflow: hidden;
+  opacity: 0;
+  transition: max-width .3s ease, opacity .3s ease;
+}
+.rail__item:hover .rail__label { max-width: 160px; opacity: 1; }
+.rail__item--active { opacity: 1; color: #fff; }
+.rail__item--active .rail__tick { width: 30px; background: var(--accent, #ff8a3d); box-shadow: 0 0 10px var(--accent, #ff8a3d); }
+.rail__item--active .rail__label { max-width: 160px; opacity: 1; color: #fff; }
+
+/* ====================== Hero ============================================== */
+.hero {
+  position: relative; z-index: 10;
+  height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+.hero__inner { max-width: 760px; }
+.hero__kicker {
+  font-family: var(--mono);
+  font-size: .8rem; letter-spacing: .42em;
+  color: var(--accent);
+  margin-bottom: 1.4rem;
+  animation: fadeUp 1s .2s both;
+}
+.hero__title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(3rem, 11vw, 7.5rem);
+  line-height: 1;
+  letter-spacing: .02em;
+  background: linear-gradient(180deg, #fff 0%, #ffd9a0 60%, #ff8a3d 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 60px rgba(255,140,60,0.25);
+  animation: fadeUp 1.1s .35s both;
+}
+.hero__sub {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: var(--ink-dim);
+  max-width: 600px; margin: 1.6rem auto 0;
+  animation: fadeUp 1.1s .55s both;
+}
+.hero__scroll {
+  margin-top: 3.5rem;
+  display: inline-flex; flex-direction: column; align-items: center; gap: .8rem;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .3em;
+  color: var(--ink-dim);
+  animation: fadeUp 1.1s .8s both;
+}
+.hero__arrow {
+  width: 1px; height: 46px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+  position: relative;
+  animation: scrollHint 2s ease-in-out infinite;
+}
+.hero__arrow::after {
+  content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%) rotate(45deg);
+  width: 7px; height: 7px; border-right: 1px solid var(--accent); border-bottom: 1px solid var(--accent);
+}
+@keyframes scrollHint { 0%,100%{opacity:.3; transform:translateY(0)} 50%{opacity:1; transform:translateY(6px)} }
+@keyframes fadeUp { from{opacity:0; transform:translateY(24px)} to{opacity:1; transform:translateY(0)} }
+
+/* ====================== Story panels ===================================== */
+#story { position: relative; z-index: 10; }
+
+.panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 6rem clamp(1.5rem, 8vw, 9rem);
+}
+/* alternate sides so the eye travels and the art stays visible */
+.panel:nth-child(even) { justify-content: flex-end; }
+.panel:nth-child(odd) { justify-content: flex-start; }
+
+.panel__card {
+  max-width: 540px;
+  background: rgba(10, 12, 22, 0.55);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid var(--accent);
+  border-radius: 14px;
+  padding: 2.2rem 2.4rem;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+
+.panel__tag {
+  font-family: var(--mono);
+  font-size: .72rem; letter-spacing: .26em;
+  color: var(--accent);
+  margin-bottom: .9rem;
+}
+.panel__title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(1.8rem, 4vw, 2.9rem);
+  line-height: 1.08;
+  margin-bottom: 1.1rem;
+  color: #fff;
+}
+.panel__lead {
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  color: #e8e4dc;
+  margin-bottom: 1.4rem;
+}
+.panel__facts { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+.panel__facts li {
+  position: relative;
+  padding-left: 1.4rem;
+  font-size: .95rem;
+  color: var(--ink-dim);
+}
+.panel__facts li::before {
+  content: "";
+  position: absolute; left: 0; top: .55em;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Extinction chapters get a heavier, alarming treatment ------------------- */
+.panel__card--extinction {
+  border-left-color: #ff2d2d;
+  border-top: 1px solid rgba(255,60,60,0.25);
+  box-shadow: 0 30px 90px rgba(120,0,0,0.4), inset 0 0 60px rgba(120,0,0,0.15);
+}
+.panel__card--extinction .panel__tag,
+.panel__card--extinction .panel__facts li::before { color: #ff5a4a; background: #ff3b30; }
+.panel__card--extinction .panel__facts li::before { box-shadow: 0 0 8px #ff3b30; }
+.panel__extinction {
+  display: flex; flex-direction: column; gap: .5rem;
+  margin: 0 0 1.3rem;
+  padding: 1rem 1.1rem;
+  background: rgba(60,0,0,0.28);
+  border: 1px solid rgba(255,60,60,0.22);
+  border-radius: 10px;
+}
+.ext__row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.ext__label { font-family: var(--mono); font-size: .64rem; letter-spacing: .2em; color: #ff7a6a; }
+.ext__val { font-size: .92rem; color: #ffd9d3; text-align: right; font-weight: 600; }
+
+/* ====================== Finale =========================================== */
+.finale {
+  position: relative; z-index: 10;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 3rem;
+}
+.finale__inner { max-width: 640px; }
+.finale__inner h2 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(3rem, 9vw, 6rem);
+  background: linear-gradient(180deg, #fff, #ffd27a);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 1.4rem;
+}
+.finale__inner p { font-size: clamp(1rem, 2vw, 1.25rem); color: #e8e4dc; margin-bottom: 1.2rem; }
+.finale__inner p strong { color: #ffd27a; }
+.finale__small { color: var(--ink-dim) !important; font-size: 1rem !important; font-style: italic; }
+.finale__btn {
+  margin-top: 1.8rem;
+  font-family: var(--mono); font-size: .74rem; letter-spacing: .18em;
+  color: #ffd27a; background: rgba(255,210,122,0.08);
+  border: 1px solid rgba(255,210,122,0.35); border-radius: 40px;
+  padding: .8rem 1.6rem; cursor: pointer;
+  transition: background .25s ease, transform .2s ease;
+}
+.finale__btn:hover { background: rgba(255,210,122,0.18); transform: translateY(-2px); }
+
+/* ====================== Responsive ======================================= */
+@media (max-width: 720px) {
+  .rail { display: none; }
+  .hud { padding: .7rem 1rem; gap: .6rem; }
+  .hud__brand span:last-child { display: none; }
+  .hud__progress { min-width: auto; }
+  .hud__bar { width: 50px; }
+  .panel { padding: 5rem 1.2rem; justify-content: center !important; }
+  .panel__card { padding: 1.6rem 1.4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hud__dot, .hero__arrow { animation: none; }
+}
