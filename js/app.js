@@ -9,52 +9,27 @@
 (function () {
   "use strict";
 
-  const TIMELINE = window.TIMELINE;
   const SCENES = window.SCENES;
 
-  // ---- build the story panels ----------------------------------------------
-  const story = document.getElementById("story");
-  const rail = document.getElementById("rail");
-
-  TIMELINE.forEach((c, i) => {
-    const panel = document.createElement("section");
-    panel.className = "panel";
-    panel.dataset.scene = c.id;
-    panel.dataset.index = i;
-    panel.style.setProperty("--accent", c.accent);
-
-    const factList = c.facts.map((f) => `<li>${f}</li>`).join("");
-
-    const extinctionBlock = c.extinction
-      ? `<div class="panel__extinction">
-           <div class="ext__row"><span class="ext__label">DEATH TOLL</span><span class="ext__val">${c.extinction.kills}</span></div>
-           <div class="ext__row"><span class="ext__label">CAUSE</span><span class="ext__val">${c.extinction.cause}</span></div>
-         </div>`
-      : "";
-
-    panel.innerHTML = `
-      <div class="panel__card${c.extinction ? " panel__card--extinction" : ""}">
-        <p class="panel__tag">${c.tag}</p>
-        <h2 class="panel__title">${c.title}</h2>
-        <p class="panel__lead">${c.lead}</p>
-        ${extinctionBlock}
-        <ul class="panel__facts">${factList}</ul>
-      </div>`;
-    story.appendChild(panel);
-
-    // rail dot
-    const dot = document.createElement("button");
-    dot.className = "rail__item";
-    dot.dataset.index = i;
-    dot.innerHTML = `<span class="rail__tick"></span><span class="rail__label">${c.rail}</span>`;
-    dot.addEventListener("click", () => {
-      panel.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-    rail.appendChild(dot);
-  });
-
+  // The story panels are static HTML (see index.html / build.js) so the full
+  // timeline is readable with JavaScript disabled. Here we just read them back
+  // and derive the data the animation engine needs from their data-attributes.
   const panels = Array.from(document.querySelectorAll(".panel"));
   const railItems = Array.from(document.querySelectorAll(".rail__item"));
+
+  const TIMELINE = panels.map((p) => ({
+    id: p.dataset.scene,
+    accent: p.dataset.accent,
+    age: parseFloat(p.dataset.age),
+    era: p.dataset.era || "",
+  }));
+
+  // Clicking a rail tick jumps to that era.
+  railItems.forEach((it, i) => {
+    it.addEventListener("click", () => {
+      if (panels[i]) panels[i].scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
 
   // ---- canvas setup ---------------------------------------------------------
   const canvas = document.getElementById("stage");

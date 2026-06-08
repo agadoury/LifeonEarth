@@ -55,12 +55,40 @@ Then visit <http://localhost:8000>.
 ## How it's built
 
 ```
-index.html            structure + HUD + intro/outro
-css/styles.css         cinematic styling, typography, responsive layout
-js/timeline-data.js    the "script" of deep time — every chapter's content
-js/scenes.js           procedural canvas animations, one per era
-js/app.js              scroll tracking, the deep-time clock, the render loop
+index.html             structure + HUD + intro/outro + static timeline panels
+css/styles.css          cinematic styling, typography, responsive layout
+js/timeline-data.js     the "script" of deep time — every chapter's content
+js/scenes.js            procedural canvas animations, one per era
+js/app.js               scroll tracking, the deep-time clock, the render loop
+build.js                generates the static panels + the standalone build
+dist/life-on-earth.html one self-contained file (all CSS/JS inlined)
 ```
 
 No frameworks, no dependencies — just HTML, CSS, and vanilla JavaScript with a
 single `<canvas>`.
+
+### Progressive enhancement
+
+The timeline panels are **static HTML**, generated into `index.html` from
+`js/timeline-data.js` by `build.js`. The JavaScript only *enhances* them with
+the live canvas animations and the deep-time clock — so the full story is
+readable even with JavaScript disabled or in a viewer that doesn't run scripts.
+
+### Rebuilding
+
+After editing `js/timeline-data.js` (or any CSS/JS), regenerate the static
+panels and the single-file build:
+
+```bash
+node build.js
+```
+
+This rewrites the panel markup in `index.html` and refreshes
+`dist/life-on-earth.html`.
+
+## A single file you can open anywhere
+
+`dist/life-on-earth.html` is the **entire experience in one self-contained
+file** — every line of CSS and JavaScript is inlined. Download it and
+double-click; it runs straight from `file://` with no server, no clone, and no
+network (decorative web-fonts fall back to system fonts when offline).
